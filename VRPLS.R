@@ -1,0 +1,94 @@
+read_data <- function(name) {
+  conn = file(paste("problems/Problem", toString(name), ".txt", sep=""), open="r")
+  text = readLines(conn)
+  close(conn)
+  
+  tmp <- strsplit(text[1], ",")
+  num.sites <- as.integer(tmp[[1]][1])
+  num.carry <- as.integer(tmp[[1]][2])
+  
+  data.sites <- data.frame(matrix(ncol = 6, nrow = num.sites))
+  colnames(data.sites) <- c("id", "x", "y", "organic", "plastic", "paper")
+  for(i in 1:num.sites) {
+    tmp <- unlist(strsplit(text[1+i], ","))
+    data.sites[i,] <- as.double(tmp)
+  }
+  
+  data.roads <- data.frame()
+  for(i in 1:(length(text)-(1+num.sites))) {
+    tmp <- unlist(strsplit(text[1+num.sites+i], ","))
+    df <- data.frame(start = as.integer(tmp[1]), end = as.integer(tmp[2]), length = as.double(tmp[3]), carry = as.double(tmp[5]))
+    data.roads <- rbind(data.roads, df)
+    if(as.integer(tmp[4]) == 0) {
+      df <- data.frame(start = as.integer(tmp[2]), end = as.integer(tmp[1]), length = as.double(tmp[3]), carry = as.double(tmp[5]))
+      data.roads <- rbind(data.roads, df)
+    }
+  }
+  list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads)
+}
+
+
+fitness <- function(x) { # x: list of routes
+  cost.all <- 0 # total cost of specific garbage collection
+  data.cpy <- data.frame(data.sites$id, data.sites$organic)
+  colnames(data.sites.cpy) <- c("id", "garbage")
+  for(i in 1:length(x)) {
+    carry <- 0 # how much current truck is carrying
+    route <- x[[i]] # get current route
+    len <- 0 # current trip length
+    time <- 0 # current trip time
+    cost <- 10 # every trip costs 10
+    for(j in 2:length(route)) {
+      # calculate which road to take from j-1 to j
+      subroads <- data.roads[data.roads$start == route[j-1],] # find roads that start with j-1
+      possible <- subroads[subroads$end == route[j],] # find roads that end with j
+      found <- FALSE
+      if(length(possible$start) > 0) {
+        possible <- possible[order(possible$length),] # sort remaining roads by their length
+        for(k in 1:length(possible$start)) {
+          if(possible[k,]$carry >= carry) { # take shortest road that can carry us
+            found <- TRUE
+            break
+          }
+        }
+      }
+      if(found) {
+        len <- len + possible[k,]$length # add road length to trip length
+      } else {
+        len <- len + 1000 # penalize under-carrying and non-existant road
+      }
+      
+      # calculate time spent servicing
+      if(data.cpy$garbage[route[j]] > 0 && route[j] != 1) {
+        time <- time + 0.2 # servicing is 12min
+      }
+      if(route[j] == 1) {
+        time <- time + 0.5 # emptying at depot is 30min
+      }
+      
+      # new carrying capacity (if already at 0 following does nothing)
+      carry <- carry + data.cpy$garbage[route[j]]
+      data.cpy$garbage[route[j]] <- 0 # remove all garbage from site
+    }
+    cost <- cost + 0.1*len # travel cost is 0.1/km
+    time <- time + len/50 # travel speed is 50km/h
+    if(time > 8) { # time cost is 10/h and 20/h for overtime
+      cost <- cost + 80 + (time-8)*20
+    } else {
+      cost <- cost + time*10
+    }
+    
+    if(carry > num.carry) {
+      cost <- cost*2 # penalize carrying overload
+    }
+    
+    cost.all <- cost.all + cost # update global cost of specific garbage collection
+  }
+  cost.all
+}
+
+rd <- read_data(1)
+num.sites <- rd$num.sites
+num.carry <- rd$num.carry
+data.sites <- rd$data.sites
+data.roads <- rd$data.roads
