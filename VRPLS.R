@@ -24,11 +24,11 @@ read_data <- function(name) {
       data.roads <- rbind(data.roads, df)
     }
   }
-  list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads)
+  return(list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads))
 }
 
 
-fitness <- function(x) { # x: list of routes
+fitness <- function(x) { # x: list of routes (list of lists)
   cost.all <- 0 # total cost of specific garbage collection
   data.cpy <- data.frame(data.sites$id, data.sites$organic)
   colnames(data.sites.cpy) <- c("id", "garbage")
@@ -55,7 +55,7 @@ fitness <- function(x) { # x: list of routes
       if(found) {
         len <- len + possible[k,]$length # add road length to trip length
       } else {
-        len <- len + 1000 # penalize under-carrying and non-existant road
+        len <- len + penalty.length # penalize under-carrying and non-existant road
       }
       
       # calculate time spent servicing
@@ -79,12 +79,80 @@ fitness <- function(x) { # x: list of routes
     }
     
     if(carry > num.carry) {
-      cost <- cost*2 # penalize carrying overload
+      cost <- cost*penalty.carry # penalize carrying overload
     }
     
     cost.all <- cost.all + cost # update global cost of specific garbage collection
   }
-  cost.all
+  
+  if(sum(data.cpy$garbage) > 0) { # not all garbage is collected
+    cost.all <- cost.all * penalty.garbage
+  }
+  return(cost.all)
+}
+
+
+"
+x: 1 2 3 1 4 5 1 -> two trips
+
+combine two trips together
+split trip into two trips
+
+add a site to the trip (random one randomly somewhere)
+remove a site from a trip (random one)
+
+switch two sites in a trip (random two, not necessearly two consecutive)
+"
+neighborhood <- function(x) {
+  n <- c()
+  idx <- 1
+  
+  # drop a number
+  for(i in 2:(length(x)-1)) {
+    tf.v <- rep(TRUE, length(x))
+    tf.v[i] <- FALSE
+    n.v <- x[tf.v]
+    if(checkValid(n.v)) {
+      n[[idx]] <- n.v
+      idx <- idx + 1
+    }
+  }
+  
+  # add a number
+  for(i in 1:(length(x)-1)) {
+    for(k in 1:num.sites) {
+      n.v <- c(x[1:i], k, x[(i+1):length(x)])
+      if(checkValid(n.v)) {
+        n[[idx]] <- n.v
+        idx <- idx + 1
+      }
+    }
+  }
+  
+  # swap a number
+  for(i in 2:(length(x)-1)) {
+    num <- x[i]
+    for(k in 1:num.sites) {
+      if(k != num) {
+        n.v <- x
+        n.v[i] <- k
+        if(checkValid(n.v)) {
+          n[[idx]] <- n.v
+          idx <- idx + 1
+        }
+      }
+    }
+  }
+  
+  return(n)
+}
+checkValid <- function(t) {
+  for(i in 2:length(t)) {
+    if(t[i-1] == t[i]) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
 }
 
 rd <- read_data(1)
@@ -92,3 +160,7 @@ num.sites <- rd$num.sites
 num.carry <- rd$num.carry
 data.sites <- rd$data.sites
 data.roads <- rd$data.roads
+
+penalty.length <- sum(data.roads$length)*100
+penalty.carry <- 2
+penalty.garbage <- 2
