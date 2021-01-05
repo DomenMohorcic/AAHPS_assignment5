@@ -34,11 +34,11 @@ read_data <- function(name) {
   return(list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads))
 }
 
+
 # calculate fitness function
-fitness <- function(x) { # x: list of routes (list of lists)
+fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
   cost.all <- 0 # total cost of specific garbage collection
-  data.cpy <- data.frame(data.sites$id, data.sites$organic)
-  colnames(data.sites.cpy) <- c("id", "garbage")
+  
   for(i in 1:length(x)) {
     carry <- 0 # how much current truck is carrying
     route <- x[[i]] # get current route
@@ -93,7 +93,7 @@ fitness <- function(x) { # x: list of routes (list of lists)
   }
   
   if(sum(data.cpy$garbage) > 0) { # not all garbage is collected
-    cost.all <- cost.all * penalty.garbage
+    cost.all <- cost.all * penalty.garbage*sum(data.cpy$garbage)
   }
   return(cost.all)
 }
@@ -180,63 +180,68 @@ toMatrix <- function(n) {
 }
 
 # LS Algorithm
-AlgorithmLS(s0) {
+AlgorithmLS <- function(s0, data.cpy) {
   sm <- s0
   
-  while (TRUE) {
+  while(TRUE) {
     n <- neighborhood(s0)
     f <- c()
     
     # calculate all fitness values for neighborhood
     for (i in 1:length(n)) {
-      f[i] <- fitness(toMatrix(n[[i]]))
+      f[i] <- fitness(toMatrix(n[[i]]), data.cpy)
     }
     
     # find best (min) fitness function for neighborhood
     best.idx <- which.min(f)
     
     # current best fitness
-    fc <- fitness(toMatrix(sm))
+    fc <- fitness(toMatrix(sm), data.cpy)
     
     if (f[best.idx] < fc) {
       sm = n[[best.idx]]
+      s0 = n[[best.idx]]
     } else {
       break
     }
-    
   }
   
   return(sm)
 }
 
 # SA Algorithm
-AlgorithmSA <- function(s0, lambda, t) {
+AlgorithmSA <- function(s0, lambda, t, data.cpy) {
   s <- s0
   sm <- s0
   
   while (t >= 1) {
-    n <- neighborhood(s0)
+    n <- neighborhood(s)
     rand <- sample(1:length(n), 1)
     sc <- n[[rand]]
     
-    fm <- fitness(toMatrix(sm))
-    fc <- fitness(toMatrix(sc))
-    f <- fitness(toMatrix(s))
+    fm <- fitness(toMatrix(sm), data.cpy)
+    fc <- fitness(toMatrix(sc), data.cpy)
+    f <- fitness(toMatrix(s), data.cpy)
     
     if (fc < fm) {
       sm <- sc
     }
     
-    if (sc < s) {
+    if (fc < f) {
       s <- sc
     } else {
       prob <- exp(-(fc - f) / t)
+      #print(prob)
       t <- t * lambda
+      if(runif(1, 0, 1) < prob) {
+        #print("Chosen worse")
+        s <- sc
+      }
     }
   }
   
   # end with LS
-  sm <- AlgorithmLS(sm)
+  sm <- AlgorithmLS(sm, data.cpy)
   
   return(sm)
 }
@@ -250,3 +255,162 @@ data.roads <- rd$data.roads
 penalty.length <- sum(data.roads$length)*100
 penalty.carry <- 2
 penalty.garbage <- 2
+
+
+# basic LS algorithm
+best.organic <- c()
+f.organic <- Inf
+best.plasitc <- c()
+f.plastic <- Inf
+best.paper <- c()
+f.paper <- Inf
+for(i in 1:10) {
+  data.cpy <- data.frame(data.sites$id, data.sites$organic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.organic <- AlgorithmLS(s0, data.cpy)
+  f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
+  if(f.res.organic < f.organic) {
+    f.organic <- f.res.organic
+    best.organic <- res.organic
+  }
+  
+  data.cpy <- data.frame(data.sites$id, data.sites$plastic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.plastic <- AlgorithmLS(s0, data.cpy)
+  f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
+  if(f.res.plastic < f.plastic) {
+    f.plastic <- f.res.plastic
+    best.plastic <- res.plastic
+  }
+  
+  data.cpy <- data.frame(data.sites$id, data.sites$paper)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.paper <- AlgorithmLS(s0, data.cpy)
+  f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
+  if(f.res.paper < f.paper) {
+    f.paper <- f.res.paper
+    best.paper <- res.paper
+  }
+  
+  print(i)
+}
+
+
+# Simulated Annealing LS
+best.organic <- c()
+f.organic <- Inf
+best.plasitc <- c()
+f.plastic <- Inf
+best.paper <- c()
+f.paper <- Inf
+for(i in 1:10) {
+  data.cpy <- data.frame(data.sites$id, data.sites$organic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.organic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
+  if(f.res.organic < f.organic) {
+    f.organic <- f.res.organic
+    best.organic <- res.organic
+  }
+  
+  data.cpy <- data.frame(data.sites$id, data.sites$plastic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.plastic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
+  if(f.res.plastic < f.plastic) {
+    f.plastic <- f.res.plastic
+    best.plastic <- res.plastic
+  }
+  
+  data.cpy <- data.frame(data.sites$id, data.sites$paper)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.paper <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
+  if(f.res.paper < f.paper) {
+    f.paper <- f.res.paper
+    best.paper <- res.paper
+  }
+  
+  print(i)
+}
+
+
+###############################################################################
+#                                                                             #
+#                             Solving all problems                            #
+#                                                                             #
+###############################################################################
+for(i in 1:10) {
+  rd <- read_data(i)
+  num.sites <- rd$num.sites
+  num.carry <- rd$num.carry
+  data.sites <- rd$data.sites
+  data.roads <- rd$data.roads
+  
+  best.organic <- c()
+  f.organic <- Inf
+  best.plasitc <- c()
+  f.plastic <- Inf
+  best.paper <- c()
+  f.paper <- Inf
+  for(j in 1:10) {
+    
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$organic)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.organic <- AlgorithmLS(s0, data.cpy)
+    f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
+    if(f.res.organic < f.organic) {
+      f.organic <- f.res.organic
+      best.organic <- res.organic
+    }
+    time.taken <- Sys.time() - start.time
+    print(paste(toString(i), "organic: ", toString(time.taken)))
+    
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$plastic)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.plastic <- AlgorithmLS(s0, data.cpy)
+    f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
+    if(f.res.plastic < f.plastic) {
+      f.plastic <- f.res.plastic
+      best.plastic <- res.plastic
+    }
+    time.taken <- Sys.time() - start.time
+    print(paste(toString(i), "plastic: ", toString(time.taken)))
+    
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$paper)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.paper <- AlgorithmLS(s0, data.cpy)
+    f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
+    if(f.res.paper < f.paper) {
+      f.paper <- f.res.paper
+      best.paper <- res.paper
+    }
+    time.taken <- Sys.time() - start.time
+    print(paste(toString(i), "paper: ", toString(time.taken)))
+  }
+  
+  print(paste("Solution for problem ", i))
+  print("Organic:")
+  print(best.organic)
+  print(f.organic)
+  print("Plastic:")
+  print(best.plastic)
+  print(f.plastic)
+  print("Paper:")
+  print(best.paper)
+  print(f.paper)
+  print("Cost:")
+  print(f.organic+f.plastic+f.paper)
+}
