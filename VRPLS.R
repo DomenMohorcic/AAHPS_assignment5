@@ -146,6 +146,8 @@ neighborhood <- function(x) {
   
   return(n)
 }
+
+# check if a neighbourhood is valid
 checkValid <- function(t) {
   for(i in 2:length(t)) {
     if(t[i-1] == t[i]) {
@@ -153,6 +155,21 @@ checkValid <- function(t) {
     }
   }
   return(TRUE)
+}
+
+# transform into matrix (readable by the fitness function)
+toMatrix <- function(n) {
+  mat <- c()
+  idx <- 1
+  cut <- 2
+  for (i in 2:length(n)) {
+    if (n[i] == 1) {
+      mat[[idx]] <- c(1, n[cut:i])
+      idx <- idx + 1
+      cut <- i + 1
+    }
+  }
+  return(mat)
 }
 
 rd <- read_data(1)
