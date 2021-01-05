@@ -1,3 +1,10 @@
+###############################################################################
+#                                                                             #
+#               ASSIGNMENT 5 - Vehicle routing problem                        #
+#                                                                             #
+###############################################################################
+
+# read the data
 read_data <- function(name) {
   conn = file(paste("problems/Problem", toString(name), ".txt", sep=""), open="r")
   text = readLines(conn)
@@ -27,7 +34,7 @@ read_data <- function(name) {
   return(list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads))
 }
 
-
+# calculate fitness function
 fitness <- function(x) { # x: list of routes (list of lists)
   cost.all <- 0 # total cost of specific garbage collection
   data.cpy <- data.frame(data.sites$id, data.sites$organic)
@@ -147,7 +154,7 @@ neighborhood <- function(x) {
   return(n)
 }
 
-# check if a neighbourhood is valid
+# check if a neighborhood is valid
 checkValid <- function(t) {
   for(i in 2:length(t)) {
     if(t[i-1] == t[i]) {
@@ -170,6 +177,68 @@ toMatrix <- function(n) {
     }
   }
   return(mat)
+}
+
+# LS Algorithm
+AlgorithmLS(s0) {
+  sm <- s0
+  
+  while (TRUE) {
+    n <- neighborhood(s0)
+    f <- c()
+    
+    # calculate all fitness values for neighborhood
+    for (i in 1:length(n)) {
+      f[i] <- fitness(toMatrix(n[[i]]))
+    }
+    
+    # find best (min) fitness function for neighborhood
+    best.idx <- which.min(f)
+    
+    # current best fitness
+    fc <- fitness(toMatrix(sm))
+    
+    if (f[best.idx] < fc) {
+      sm = n[[best.idx]]
+    } else {
+      break
+    }
+    
+  }
+  
+  return(sm)
+}
+
+# SA Algorithm
+AlgorithmSA <- function(s0, lambda, t) {
+  s <- s0
+  sm <- s0
+  
+  while (t >= 1) {
+    n <- neighborhood(s0)
+    rand <- sample(1:length(n), 1)
+    sc <- n[[rand]]
+    
+    fm <- fitness(toMatrix(sm))
+    fc <- fitness(toMatrix(sc))
+    f <- fitness(toMatrix(s))
+    
+    if (fc < fm) {
+      sm <- sc
+    }
+    
+    if (sc < s) {
+      s <- sc
+    } else {
+      prob <- exp(-(fc - f) / t)
+      t <- t * lambda
+    }
+  }
+  
+  # end with LS
+  sm <- AlgorithmLS(sm)
+  
+  return(sm)
 }
 
 rd <- read_data(1)
