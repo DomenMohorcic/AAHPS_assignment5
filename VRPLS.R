@@ -22,8 +22,47 @@ read_data <- function(name) {
   }
   
   data.roads <- data.frame()
+  roads.length <- c()
+  roads.carry <- c()
   for(i in 1:(length(text)-(1+num.sites))) {
     tmp <- unlist(strsplit(text[1+num.sites+i], ","))
+    start <- as.integer(tmp[1])
+    end <- as.integer(tmp[2])
+    length <- as.double(tmp[3])
+    one.way <- as.integer(tmp[4])
+    carry <- as.double(tmp[5])
+    
+    road.name.str <- toString(c(start, end))
+    road.name.rev <- toString(c(end, start))
+    
+    if(!is.null(roads.length[[road.name.str]])) { # road between start and end already exists
+      if(carry %in% roads.carry[[road.name.str]]) { # do we have same carrying capacity?
+        idx.str <- which(roads.carry[[road.name.str]] == carry)
+        if(length < roads.length[[road.name.str]][idx.str]) { # is this road shorter?
+          roads.length[[road.name.str]][idx.str] <- length
+          if(one.way == 0) {
+            idx.rev <- which(roads.carry[[road.name.rev]] == carry)
+            roads.length[[road.name.rev]][idx.rev] <- length
+          }
+        }
+      } else { # not same carrying capacity, add as normal
+        roads.length[[road.name.str]] <- c(roads.length[[road.name.str]], length)
+        roads.carry[[road.name.str]] <- c(roads.carry[[road.name.str]], carry)
+        if(one.way == 0) {
+          roads.length[[road.name.rev]] <- c(roads.length[[road.name.rev]], length)
+          roads.carry[[road.name.rev]] <- c(roads.carry[[road.name.rev]], carry)
+        }
+      }
+    } else { # road does not exist
+      roads.length[[road.name.str]] <- length
+      roads.carry[[road.name.str]] <- carry
+      if(one.way == 0) {
+        roads.length[[road.name.rev]] <- length
+        roads.carry[[road.name.rev]] <- carry
+      }
+    }
+    
+    
     df <- data.frame(start = as.integer(tmp[1]), end = as.integer(tmp[2]), length = as.double(tmp[3]), carry = as.double(tmp[5]))
     data.roads <- rbind(data.roads, df)
     if(as.integer(tmp[4]) == 0) {
@@ -31,11 +70,31 @@ read_data <- function(name) {
       data.roads <- rbind(data.roads, df)
     }
   }
-  return(list("num.sites" = num.sites, "num.carry"= num.carry, "data.sites" = data.sites, "data.roads" = data.roads))
+  
+  for(i in 1:length(roads.length)) { # sort roads
+    idx <- order(roads.length[[i]])
+    roads.length[[i]] <- roads.length[[i]][idx]
+    roads.carry[[i]] <- roads.carry[[i]][idx]
+    
+    online.max <- roads.carry[[i]][1] # remove worse
+    idx.surviving <- c(1)
+    for(j in 2:length(idx)) {
+      if(online.max < roads.carry[[i]][j]) {
+        online.max <- roads.carry[[i]][j]
+        idx.surviving <- c(idx.surviving, j)
+      }
+    }
+    roads.length[[i]] <- roads.length[[i]][idx.surviving]
+    roads.carry[[i]] <- roads.carry[[i]][idx.surviving]
+  }
+  
+  return(list("num.sites" = num.sites, "num.carry"= num.carry,
+              "data.sites" = data.sites, "data.roads" = data.roads,
+              "roads.length" = roads.length, "roads.carry" = roads.carry))
 }
 
 
-# calculate fitness function
+# calculate fitness function !!WRONG!!
 fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
   cost.all <- 0 # total cost of specific garbage collection
   
@@ -47,8 +106,7 @@ fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
     cost <- 10 # every trip costs 10
     for(j in 2:length(route)) {
       # calculate which road to take from j-1 to j
-      subroads <- data.roads[data.roads$start == route[j-1],] # find roads that start with j-1
-      possible <- subroads[subroads$end == route[j],] # find roads that end with j
+      possible <-  data.roads[which(data.roads$start == route[j-1] & data.roads$end == route[j]),]
       found <- FALSE
       if(length(possible$start) > 0) {
         possible <- possible[order(possible$length),] # sort remaining roads by their length
@@ -96,6 +154,21 @@ fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
     cost.all <- cost.all * penalty.garbage*sum(data.cpy$garbage)
   }
   return(cost.all)
+}
+
+
+# fitness with memoization
+cost <- function(x, data.cpy, memo) {
+  name <- toString(x)
+  if(!is.null(memo[[name]])) return(memo[[name]])
+  
+  route.cost <- 0
+  for(i in 2:length(x)) {
+    
+  }
+  
+  memo[[name]] <- cost.all
+  return(list("cost" = cost.all, "memo" = memo))
 }
 
 
@@ -182,6 +255,7 @@ toMatrix <- function(n) {
 # LS Algorithm
 AlgorithmLS <- function(s0, data.cpy) {
   sm <- s0
+  fc <- fitness(toMatrix(sm), data.cpy)
   
   while(TRUE) {
     n <- neighborhood(s0)
@@ -195,12 +269,10 @@ AlgorithmLS <- function(s0, data.cpy) {
     # find best (min) fitness function for neighborhood
     best.idx <- which.min(f)
     
-    # current best fitness
-    fc <- fitness(toMatrix(sm), data.cpy)
-    
     if (f[best.idx] < fc) {
-      sm = n[[best.idx]]
-      s0 = n[[best.idx]]
+      sm <- n[[best.idx]]
+      s0 <- n[[best.idx]]
+      fc <- f[best.idx]
     } else {
       break
     }
@@ -246,11 +318,16 @@ AlgorithmSA <- function(s0, lambda, t, data.cpy) {
   return(sm)
 }
 
-rd <- read_data(1)
+rd <- read_data(8)
 num.sites <- rd$num.sites
 num.carry <- rd$num.carry
 data.sites <- rd$data.sites
 data.roads <- rd$data.roads
+roads.length <- rd$roads.length
+roads.carry <- rd$roads.carry
+
+length(roads.carry)
+nrow(data.roads)
 
 penalty.length <- sum(data.roads$length)*100
 penalty.carry <- 2
@@ -365,40 +442,43 @@ for(i in 1:10) {
     data.cpy <- data.frame(data.sites$id, data.sites$organic)
     colnames(data.cpy) <- c("id", "garbage")
     s0 <- c(1, sample(2:num.sites), 1)
-    res.organic <- AlgorithmLS(s0, data.cpy)
+    res.organic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
     f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
     if(f.res.organic < f.organic) {
       f.organic <- f.res.organic
       best.organic <- res.organic
     }
-    time.taken <- Sys.time() - start.time
-    print(paste(toString(i), "organic: ", toString(time.taken)))
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
     
     start.time <- Sys.time()
     data.cpy <- data.frame(data.sites$id, data.sites$plastic)
     colnames(data.cpy) <- c("id", "garbage")
     s0 <- c(1, sample(2:num.sites), 1)
-    res.plastic <- AlgorithmLS(s0, data.cpy)
+    res.plastic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
     f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
     if(f.res.plastic < f.plastic) {
       f.plastic <- f.res.plastic
       best.plastic <- res.plastic
     }
-    time.taken <- Sys.time() - start.time
-    print(paste(toString(i), "plastic: ", toString(time.taken)))
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
     
     start.time <- Sys.time()
     data.cpy <- data.frame(data.sites$id, data.sites$paper)
     colnames(data.cpy) <- c("id", "garbage")
     s0 <- c(1, sample(2:num.sites), 1)
-    res.paper <- AlgorithmLS(s0, data.cpy)
+    res.paper <- AlgorithmSA(s0, 0.95, 100, data.cpy)
     f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
     if(f.res.paper < f.paper) {
       f.paper <- f.res.paper
       best.paper <- res.paper
     }
-    time.taken <- Sys.time() - start.time
-    print(paste(toString(i), "paper: ", toString(time.taken)))
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
   }
   
   print(paste("Solution for problem ", i))
@@ -414,3 +494,231 @@ for(i in 1:10) {
   print("Cost:")
   print(f.organic+f.plastic+f.paper)
 }
+
+
+# solving organic
+for(i in 1:3) {
+  rd <- read_data(i)
+  num.sites <- rd$num.sites
+  num.carry <- rd$num.carry
+  data.sites <- rd$data.sites
+  data.roads <- rd$data.roads
+  penalty.length <- sum(data.roads$length)*100
+  penalty.carry <- 2
+  penalty.garbage <- 2
+  
+  best.organic <- c()
+  f.organic <- Inf
+  for(j in 1:10) {
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$organic)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.organic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+    f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
+    if(f.res.organic < f.organic) {
+      f.organic <- f.res.organic
+      best.organic <- res.organic
+    }
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
+  }
+  
+  print(paste("Solution for problem ", i))
+  print("Organic:")
+  print(best.organic)
+  print(f.organic)
+}
+
+# solving plastic
+for(i in 1:3) {
+  rd <- read_data(i)
+  num.sites <- rd$num.sites
+  num.carry <- rd$num.carry
+  data.sites <- rd$data.sites
+  data.roads <- rd$data.roads
+  penalty.length <- sum(data.roads$length)*100
+  penalty.carry <- 2
+  penalty.garbage <- 2
+  
+  best.plasitc <- c()
+  f.plastic <- Inf
+  for(j in 1:10) {
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$plastic)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.plastic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+    f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
+    if(f.res.plastic < f.plastic) {
+      f.plastic <- f.res.plastic
+      best.plastic <- res.plastic
+    }
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
+  }
+  
+  print(paste("Solution for problem ", i))
+  print("Plastic:")
+  print(best.plastic)
+  print(f.plastic)
+}
+
+# solving paper
+for(i in 1:3) {
+  rd <- read_data(i)
+  num.sites <- rd$num.sites
+  num.carry <- rd$num.carry
+  data.sites <- rd$data.sites
+  data.roads <- rd$data.roads
+  penalty.length <- sum(data.roads$length)*100
+  penalty.carry <- 2
+  penalty.garbage <- 2
+  
+  best.paper <- c()
+  f.paper <- Inf
+  for(j in 1:10) {
+    start.time <- Sys.time()
+    data.cpy <- data.frame(data.sites$id, data.sites$paper)
+    colnames(data.cpy) <- c("id", "garbage")
+    s0 <- c(1, sample(2:num.sites), 1)
+    res.paper <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+    f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
+    if(f.res.paper < f.paper) {
+      f.paper <- f.res.paper
+      best.paper <- res.paper
+    }
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    print(time.taken)
+  }
+  
+  print(paste("Solution for problem ", i))
+  print("Paper:")
+  print(best.paper)
+  print(f.paper)
+}
+
+
+# PARALLEL
+
+
+library(parallel)
+test <- function(data.cpy) {
+  s0 <- c(1, sample(2:num.sites), 1)
+  res <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  res
+}
+for(i in 1:10) {
+  rd <- read_data(i)
+  num.sites <- rd$num.sites
+  num.carry <- rd$num.carry
+  data.sites <- rd$data.sites
+  data.roads <- rd$data.roads
+  
+  best.organic <- c()
+  f.organic <- Inf
+  best.plasitc <- c()
+  f.plastic <- Inf
+  best.paper <- c()
+  f.paper <- Inf
+  
+  split = detectCores()
+  cl = makeCluster(split)
+  data.cpy <- data.frame(data.sites$id, data.sites$organic)
+  colnames(data.cpy) <- c("id", "garbage")
+  result <- parLapply(cl = cl, X = rep(1, split), fun = test, data.cpy = data.cpy)
+  stopCluster(cl)
+    
+  start.time <- Sys.time()
+  data.cpy <- data.frame(data.sites$id, data.sites$organic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.organic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.organic <- fitness(toMatrix(res.organic), data.cpy)
+  if(f.res.organic < f.organic) {
+    f.organic <- f.res.organic
+    best.organic <- res.organic
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(time.taken)
+  
+  start.time <- Sys.time()
+  data.cpy <- data.frame(data.sites$id, data.sites$plastic)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.plastic <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.plastic <- fitness(toMatrix(res.plastic), data.cpy)
+  if(f.res.plastic < f.plastic) {
+    f.plastic <- f.res.plastic
+    best.plastic <- res.plastic
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(time.taken)
+  
+  start.time <- Sys.time()
+  data.cpy <- data.frame(data.sites$id, data.sites$paper)
+  colnames(data.cpy) <- c("id", "garbage")
+  s0 <- c(1, sample(2:num.sites), 1)
+  res.paper <- AlgorithmSA(s0, 0.95, 100, data.cpy)
+  f.res.paper <- fitness(toMatrix(res.paper), data.cpy)
+  if(f.res.paper < f.paper) {
+    f.paper <- f.res.paper
+    best.paper <- res.paper
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(time.taken)
+  
+  
+  print(paste("Solution for problem ", i))
+  print("Organic:")
+  print(best.organic)
+  print(f.organic)
+  print("Plastic:")
+  print(best.plastic)
+  print(f.plastic)
+  print("Paper:")
+  print(best.paper)
+  print(f.paper)
+  print("Cost:")
+  print(f.organic+f.plastic+f.paper)
+}
+
+
+
+
+rd <- read_data(8)
+num.sites <- rd$num.sites
+num.carry <- rd$num.carry
+data.sites <- rd$data.sites
+data.roads <- rd$data.roads
+
+penalty.length <- sum(data.roads$length)*100
+penalty.carry <- 2
+penalty.garbage <- 2
+library(rbenchmark)
+benchmark("select" = {
+    route <- sample.int(num.sites, 2)
+    subroads <- data.roads[data.roads$start == route[1],]
+    possible <- subroads[subroads$end == route[2],]
+  },
+  "which" = {
+    route <- sample.int(num.sites, 2)
+    possible <- data.roads[which(data.roads$start == route[1] & data.roads$end == route[2]),]
+  },
+  "subset" = {
+    route <- sample.int(num.sites, 2)
+    possible <- subset(data.roads, start == route[1] & end == route[2])
+  },
+  "dict" = {
+    route.name <- toString(sample.int(num.sites, 2))
+    possible <- roads.length[[route.name]]
+  },
+  replications = 100000,
+  columns = c("test", "replications", "elapsed",
+              "relative", "user.self", "sys.self"))
