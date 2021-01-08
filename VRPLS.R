@@ -278,6 +278,26 @@ dropNumber <- function(x, k) {
   return(n.v)
 }
 
+cost2 <- function(x, )
+
+neighborhood2 <- function(perm) {
+  n <- c()
+  idx <- 1
+  
+  for (i in 1:(length(perm)-1)) {
+    for (j in (i + 1):length(perm)) {
+      n.v <- perm
+      tmp <- n.v[i]
+      n.v[i] <- n.v[j]
+      n.v[j] <- tmp
+      n[[idx]] <- n.v
+      idx <- idx + 1
+    }
+  }
+  
+  return(n)
+}
+
 neighborhood <- function(x) {
   n <- c()
   idx <- 1
@@ -291,7 +311,7 @@ neighborhood <- function(x) {
     if(checkValid(n.v)) {
       n[[idx]] <- n.v
       idx <- idx + 1
-    }
+    }                                            
   }
   
   # add a number
