@@ -78,10 +78,12 @@ read_data <- function(name) {
     
     online.max <- roads.carry[[i]][1] # remove worse
     idx.surviving <- c(1)
-    for(j in 2:length(idx)) {
-      if(online.max < roads.carry[[i]][j]) {
-        online.max <- roads.carry[[i]][j]
-        idx.surviving <- c(idx.surviving, j)
+    if(2 < length(idx)) {
+      for(j in 2:length(idx)) {
+        if(online.max < roads.carry[[i]][j]) {
+          online.max <- roads.carry[[i]][j]
+          idx.surviving <- c(idx.surviving, j)
+        }
       }
     }
     roads.length[[i]] <- roads.length[[i]][idx.surviving]
@@ -161,7 +163,7 @@ fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
 cost <- function(x, data.garbage, memo) {
   name <- toString(x)
   if(!is.null(memo[[name]])) {
-    return(memo[[name]])
+    return(list("cost" = memo[[name]]$cost, "memo" = memo))
   }
   
   cost.all <- 0
@@ -188,12 +190,17 @@ cost <- function(x, data.garbage, memo) {
     road.name <- toString(c(x[i-1], x[i]))
     possible.road <- roads.length[[road.name]]
     possible.carry <- carry <= roads.carry[[road.name]]
-    idx <- which.max(possible.carry)
-    if(possible.carry[idx]) {
-      len <- len + possible.road[idx]
+    if(length(possible.road) > 0) {
+      idx <- which.max(possible.carry)
+      if(possible.carry[idx]) {
+        len <- len + possible.road[idx]
+      } else {
+        # invalid road
+      }
     } else {
       # invalid road
     }
+    
     
     # garbage to collect
     if(data.garbage[x[i]] > 0) {
@@ -376,7 +383,7 @@ AlgorithmSA <- function(s0, lambda, t, data.cpy) {
   return(sm)
 }
 
-rd <- read_data(8)
+rd <- read_data(1)
 num.sites <- rd$num.sites
 num.carry <- rd$num.carry
 data.sites <- rd$data.sites
