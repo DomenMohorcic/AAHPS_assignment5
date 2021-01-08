@@ -31,10 +31,11 @@ readData <- function(name) {
               "data.sites" = data.sites, "data.roads" = data.roads))
 }
 
-allPairsShortestPath <- function(roads) {
+allPairsShortestPath <- function(roads, w) {
   C <- matrix(Inf, nrow = num.sites, ncol = num.sites)
   for(i in 1:nrow(roads)) {
-    C[roads[i,"start"], roads[i, "end"]] <- roads[i,"length"]
+    if (roads[i, "carry"] >= w)
+      C[roads[i,"start"], roads[i, "end"]] <- roads[i,"length"]
   }
   D <- matrix(0, nrow = num.sites, ncol = num.sites)
   P <- matrix(0, nrow = num.sites, ncol = num.sites)
@@ -133,46 +134,6 @@ cost <- function(x, data.garbage) {
   return(cost.all)
 }
 
-# construct a path from idx to next
-#possible <- data.roads[which(data.roads$start == tmp[idx] & data.roads$carry >= carry),]
-#neighbors <- unique(possible$end)
-"closest <- order(D[tmp[idx],])
-    closest.idx <- 0
-    for(i in 2:length(closest)) {
-      if(!closest[i] %in% tmp & data.garbage[closest[i]] > 0) {
-        closest.idx <- closest[i]
-        break
-      }
-    }
-    if(data.garbage[closest.idx] + carry <= num.carry) { # closest can be collected
-      carry <- carry + data.garbage[closest.idx]
-      data.garbage[closest.idx] <- 0
-      tmp <- c(tmp, closest.idx)
-      idx <- idx + 1
-    } else { # closest cannot be collected
-      found <- FALSE
-      for(j in i:length(closest)) {
-        if(data.garbage[closest[j]] + carry <= num.carry) {
-          carry <- carry + data.garbage[closest[j]]
-          data.garbage[closest[j]] <- 0
-          found <- TRUE
-          
-          tmp <- c(tmp, closest[j])
-          idx <- idx + 1
-          break
-        }
-      }
-      
-      if(!found) { # no full neighbor that can be collected
-        # go back
-        tmp <- c(tmp, rev(tmp)[-1]) # same way
-        s0 <- c(s0, tmp[-1])
-        tmp <- c(1)
-        idx <- 1
-      }
-    }"
-
-
 initialSolution <- function(data.garbage, D) {
   s0 <- c(1)
   
@@ -208,15 +169,25 @@ initialSolution <- function(data.garbage, D) {
   return(s0)
 }
 
-d <- readData(1)
+d <- readData(8)
 num.sites <- d$num.sites
 num.carry <- d$num.carry
 data.sites <- d$data.sites
 data.roads <- d$data.roads
+roads.unique <- unique(data.roads$carry)
+roads.unique <- roads.unique[order(roads.unique)]
+print(roads.unique)
 
-a <- allPairsShortestPath(data.roads)
-D <- a$D
-P <- a$P
+allShortestPaths <- c()
+for (i in 1:length(roads.unique)) {
+  a <- allPairsShortestPath(data.roads, roads.unique[i])
+  D <- a$D
+  P <- a$P
+  #print(D)
+  #print(P)
+}
+
+
 data.garbage <- data.sites$organic
 
 initialSolution(data.garbage, D)
