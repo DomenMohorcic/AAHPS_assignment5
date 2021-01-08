@@ -78,10 +78,12 @@ read_data <- function(name) {
     
     online.max <- roads.carry[[i]][1] # remove worse
     idx.surviving <- c(1)
-    for(j in 2:length(idx)) {
-      if(online.max < roads.carry[[i]][j]) {
-        online.max <- roads.carry[[i]][j]
-        idx.surviving <- c(idx.surviving, j)
+    if(2 < length(idx)) {
+      for(j in 2:length(idx)) {
+        if(online.max < roads.carry[[i]][j]) {
+          online.max <- roads.carry[[i]][j]
+          idx.surviving <- c(idx.surviving, j)
+        }
       }
     }
     roads.length[[i]] <- roads.length[[i]][idx.surviving]
@@ -158,16 +160,79 @@ fitness <- function(x, data.cpy) { # x: list of routes (list of lists)
 
 
 # fitness with memoization
-cost <- function(x, data.cpy, memo) {
+cost <- function(x, data.garbage, memo) {
   name <- toString(x)
-  if(!is.null(memo[[name]])) return(memo[[name]])
-  
-  route.cost <- 0
-  for(i in 2:length(x)) {
-    
+  if(!is.null(memo[[name]])) {
+    return(list("cost" = memo[[name]]$cost, "memo" = memo))
   }
   
-  memo[[name]] <- cost.all
+  cost.all <- 0
+  start <- 2
+  
+  idx.1 <- which(x == 1)
+  for(i in 2:length(idx.1)) {
+    if(!is.null(memo[[toString(x[1:idx.1[i]])]])) {
+      from.memo <- memo[[toString(x[1:idx.1[i]])]]
+      cost.all <- from.memo$cost
+      data.garbage <- from.memo$garbage
+      start <- idx.1[i]+1
+      break
+    }
+  }
+  
+  carry <- 0 # how much current truck is carrying
+  len <- 0 # current trip length
+  time <- 0 # current trip time
+  cost <- 10
+  
+  for(i in start:length(x)) {
+    # which road to take
+    road.name <- toString(c(x[i-1], x[i]))
+    possible.road <- roads.length[[road.name]]
+    possible.carry <- carry <= roads.carry[[road.name]]
+    if(length(possible.road) > 0) {
+      idx <- which.max(possible.carry)
+      if(possible.carry[idx]) {
+        len <- len + possible.road[idx]
+      } else {
+        # invalid road
+      }
+    } else {
+      # invalid road
+    }
+    
+    
+    # garbage to collect
+    if(data.garbage[x[i]] > 0) {
+      carry.next <- carry + data.garbage[x[i]]
+      if(carry.next <= num.carry) { # pick up trash
+        carry <- carry.next
+        data.garbage[x[i]] <- 0
+        time <- time + 0.2
+      }
+    }
+    
+    # at end
+    if(x[i] == 1) {
+      time <- time + 0.5 + len/50
+      if(time > 8) {
+        time <- c(8, time-8)
+      } else {
+        time <- c(time, 0)
+      }
+      cost <- cost + len*0.1 + sum(time*c(10, 20))
+      cost.all <- cost.all + cost
+      
+      sofar.name <- toString(x[1:i])
+      to.memo <- list("cost" = cost.all, "garbage" = data.garbage)
+      memo[[sofar.name]] <- to.memo
+      
+      carry <- 0
+      len <- 0
+      time <- 0
+      cost <- 10
+    }
+  }
   return(list("cost" = cost.all, "memo" = memo))
 }
 
@@ -325,6 +390,7 @@ AlgorithmSA <- function(s0, lambda, t, data.cpy) {
   return(sm)
 }
 
+
 randomInitialState <- function(site) {
   perm <- sample(2:num.sites)
   s0 <- c(1)
@@ -346,6 +412,7 @@ randomInitialState <- function(site) {
   
  return(s0[idx] <- 1)
 }
+
 
 rd <- read_data(8)
 num.sites <- rd$num.sites
