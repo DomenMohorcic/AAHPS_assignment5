@@ -229,11 +229,18 @@ neighborhood <- function(x) {
 
 # check if a neighborhood is valid
 checkValid <- function(t) {
+  uniq <- unique(t)
+
+  if (length(uniq) != num.sites) {
+    return(FALSE)
+  }
+  
   for(i in 2:length(t)) {
     if(t[i-1] == t[i]) {
       return(FALSE)
     }
   }
+  
   return(TRUE)
 }
 
@@ -316,6 +323,28 @@ AlgorithmSA <- function(s0, lambda, t, data.cpy) {
   sm <- AlgorithmLS(sm, data.cpy)
   
   return(sm)
+}
+
+randomInitialState <- function(site) {
+  perm <- sample(2:num.sites)
+  s0 <- c(1)
+  carry <- 0
+  idx <- 2
+  sites.visited <- 1
+  while (sites.visited <= num.sites) {
+    if ( (data.sites[perm[sites.visited], site] + carry) > num.carry ) {
+      carry <- 0
+      s0[idx] <- 1
+    } else {
+      carry <- data.sites[perm[sites.visited], site] + carry
+      s0[idx] <- perm[sites.visited]
+      sites.visited <- sites.visited + 1
+    }
+    
+    idx <- idx + 1
+  }
+  
+ return(s0[idx] <- 1)
 }
 
 rd <- read_data(8)
@@ -423,6 +452,7 @@ for(i in 1:10) {
 #                             Solving all problems                            #
 #                                                                             #
 ###############################################################################
+
 for(i in 1:10) {
   rd <- read_data(i)
   num.sites <- rd$num.sites
