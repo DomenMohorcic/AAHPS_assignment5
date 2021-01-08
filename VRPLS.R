@@ -397,6 +397,7 @@ randomInitialState <- function(site) {
   carry <- 0
   idx <- 2
   sites.visited <- 1
+  
   while (sites.visited <= num.sites) {
     if ( (data.sites[perm[sites.visited], site] + carry) > num.carry ) {
       carry <- 0
