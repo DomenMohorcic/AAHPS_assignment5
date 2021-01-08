@@ -30,31 +30,35 @@ readData <- function(name) {
     
     if(!is.null(roads.length[[road.name.str]])) { # road between start and end already exists
       if(carry %in% roads.carry[[road.name.str]]) { # do we have same carrying capacity?
-        idx.str <- which(roads.carry[[road.name.str]] == carry)
-        if(length < roads.length[[road.name.str]][idx.str]) { # is this road shorter?
-          roads.length[[road.name.str]][idx.str] <- length
-          if(one.way == 0) {
-            idx.rev <- which(roads.carry[[road.name.rev]] == carry)
-            roads.length[[road.name.rev]][idx.rev] <- length
-          }
+        idx <- which(roads.carry[[road.name.str]] == carry)
+        if(length < roads.length[[road.name.str]][idx]) { # is this road shorter?
+          roads.length[[road.name.str]][idx] <- length
         }
       } else { # not same carrying capacity, add as normal
         roads.length[[road.name.str]] <- c(roads.length[[road.name.str]], length)
         roads.carry[[road.name.str]] <- c(roads.carry[[road.name.str]], carry)
-        if(one.way == 0) {
-          roads.length[[road.name.rev]] <- c(roads.length[[road.name.rev]], length)
-          roads.carry[[road.name.rev]] <- c(roads.carry[[road.name.rev]], carry)
-        }
       }
     } else { # road does not exist
       roads.length[[road.name.str]] <- length
       roads.carry[[road.name.str]] <- carry
-      if(one.way == 0) {
+    }
+    
+    if(one.way == 0) {
+      if(!is.null(roads.length[[road.name.rev]])) { # road between start and end already exists
+        if(carry %in% roads.carry[[road.name.rev]]) { # do we have same carrying capacity?
+          idx <- which(roads.carry[[road.name.rev]] == carry)
+          if(length < roads.length[[road.name.rev]][idx]) { # is this road shorter?
+            roads.length[[road.name.rev]][idx] <- length
+          }
+        } else { # not same carrying capacity, add as normal
+          roads.length[[road.name.rev]] <- c(roads.length[[road.name.rev]], length)
+          roads.carry[[road.name.rev]] <- c(roads.carry[[road.name.rev]], carry)
+        }
+      } else { # road does not exist
         roads.length[[road.name.rev]] <- length
         roads.carry[[road.name.rev]] <- carry
       }
     }
-    
     
     df <- data.frame(start = as.integer(tmp[1]), end = as.integer(tmp[2]), length = as.double(tmp[3]), carry = as.double(tmp[5]))
     data.roads <- rbind(data.roads, df)
@@ -71,7 +75,7 @@ readData <- function(name) {
     
     online.max <- roads.carry[[i]][1] # remove worse
     idx.surviving <- c(1)
-    if(2 < length(idx)) {
+    if(2 <= length(idx)) {
       for(j in 2:length(idx)) {
         if(online.max < roads.carry[[i]][j]) {
           online.max <- roads.carry[[i]][j]
@@ -91,8 +95,9 @@ readData <- function(name) {
 allPairsShortestPath <- function(roads, w) {
   C <- matrix(Inf, nrow = num.sites, ncol = num.sites)
   for(i in 1:nrow(roads)) {
-    if (roads[i, "carry"] >= w)
+    if (roads[i, "carry"] >= w) {
       C[roads[i,"start"], roads[i, "end"]] <- roads[i,"length"]
+    }
   }
   D <- matrix(0, nrow = num.sites, ncol = num.sites)
   P <- matrix(0, nrow = num.sites, ncol = num.sites)
@@ -118,11 +123,11 @@ allPairsShortestPath <- function(roads, w) {
   return(list("D" = D, "P" = P))
 }
 
-cost <- function(x, data.garbage) {
-  name <- toString(x)
+costVector <- function(x, data.garbage) {
+  "name <- toString(x)
   if(!is.null(memo[[name]])) {
     return(memo[[name]]$cost)
-  }
+  }"
   
   cost.all <- 0
   carry <- 0 # how much current truck is carrying
@@ -142,6 +147,7 @@ cost <- function(x, data.garbage) {
       } else {
         # invalid road
         len <- len + penalty.length
+        return(road.name)
       }
     } else {
       # invalid road
@@ -183,37 +189,38 @@ cost <- function(x, data.garbage) {
   
   if(sum(data.garbage) > 0) {
     # not everything collected
+    print(data.garbage)
     return(Inf)
     cost.all <- cost.all + penalty.garbage*sum(data.garbage)
   }
-  to.memo <- list("cost" = cost.all, "garbage" = data.garbage)
-  memo[[sofar.name]] <<- to.memo
+  #to.memo <- list("cost" = cost.all, "garbage" = data.garbage)
+  #memo[[sofar.name]] <<- to.memo
   
   return(cost.all)
 }
 
-
-findPath <- function(start, end, P) {
+findPath <- function(start, end, idx) {
   tmp <- c()
-  if(P[start, end] == -1) {
+  if(all.P[[idx]][start, end] == -1) {
     return(c())
   } else {
-    path.1 <- findPath(start, P[start, end], P)
-    path.1 <- c(path.1, P[start, end])
-    path.2 <- findPath(P[start, end], end, P)
+    path.1 <- findPath(start, all.P[[idx]][start, end], idx)
+    path.1 <- c(path.1, all.P[[idx]][start, end])
+    path.2 <- findPath(all.P[[idx]][start, end], end, idx)
     path <- c(path.1, path.2)
     return(path)
   }
 }
 
-initialSolution <- function(data.garbage, D, P) {
+greedySolution <- function(data.garbage) {
   s0 <- c(1)
   
-  while(length(unique(s0)) < num.sites) {
+  while(sum(data.garbage) > 0) {
     node <- 1
     carry <- 0
     tmp <- c(node)
-    d <- D[node,]
+    idx <- which.max(roads.unique >= carry)
+    d <- all.D[[idx]][node,]
     d[which((data.garbage+carry) > num.carry | data.garbage == 0)] <- Inf
     closest <- order(d)
     while(TRUE) {
@@ -224,14 +231,18 @@ initialSolution <- function(data.garbage, D, P) {
         }
       }
       
-      path <- findPath(node, closest.idx, P)
+      path <- findPath(node, closest.idx, idx)
+      if(1 %in% path) {
+        break
+      }
       
       carry <- carry + data.garbage[closest.idx]
       data.garbage[closest.idx] <- 0
       tmp <- c(tmp, path, closest.idx)
       node <- closest.idx
       
-      d <- D[node,]
+      idx <- which.max(roads.unique >= carry)
+      d <- all.D[[idx]][node,]
       d[which((data.garbage+carry) > num.carry | data.garbage == 0)] <- Inf
       closest <- order(d)
       if(d[closest[1]] == Inf) {
@@ -239,14 +250,66 @@ initialSolution <- function(data.garbage, D, P) {
       }
     }
     
-    path <- findPath(node, 1, P)
+    path <- findPath(node, 1, idx)
     
     s0 <- c(s0, tmp[-1], path, 1)
   }
   return(s0)
 }
 
-d <- readData(8)
+neighborhoodPerm <- function(perm) {
+  n <- c()
+  idx <- 1
+  
+  for (i in 1:(length(perm)-1)) {
+    for (j in (i + 1):length(perm)) {
+      n.v <- perm
+      tmp <- n.v[i]
+      n.v[i] <- n.v[j]
+      n.v[j] <- tmp
+      n[[idx]] <- n.v
+      idx <- idx + 1
+    }
+  }
+  
+  return(n)
+}
+
+toMatrix <- function(n) {
+  mat <- c()
+  idx <- 1
+  cut <- 2
+  for (i in 2:length(n)) {
+    if (n[i] == 1) {
+      mat[[idx]] <- c(1, n[cut:i])
+      idx <- idx + 1
+      cut <- i + 1
+    }
+  }
+  return(mat)
+}
+
+writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
+  mtx.organic <- toMatrix(sol.organic)
+  mtx.plastic <- toMatrix(sol.plastic)
+  mtx.paper <- toMatrix(sol.paper)
+  
+  file.create(paste("solutions/Solution", toString(name), ".txt", sep=""))
+  conn = file(paste("solutions/Solution", toString(name), ".txt", sep=""), open="w")
+  
+  for(i in 1:length(mtx.organic)) {
+    write(paste(c(1, mtx.organic[[i]]), collapse=','), conn)
+  }
+  for(i in 1:length(mtx.plastic)) {
+    write(paste(c(2, mtx.plastic[[i]]), collapse=','), conn)
+  }
+  for(i in 1:length(mtx.paper)) {
+    write(paste(c(3, mtx.paper[[i]]), collapse=','), conn)
+  }
+  close(conn)
+}
+
+d <- readData(6)
 num.sites <- d$num.sites
 num.carry <- d$num.carry
 data.sites <- d$data.sites
@@ -255,25 +318,27 @@ roads.length <- d$roads.length
 roads.carry <- d$roads.carry
 roads.unique <- unique(data.roads$carry)
 roads.unique <- roads.unique[order(roads.unique)]
-print(roads.unique)
+length(roads.unique)
 
-allShortestPaths <- c()
+all.D <- c()
+all.P <- c()
 for (i in 1:length(roads.unique)) {
   a <- allPairsShortestPath(data.roads, roads.unique[i])
-  D <- a$D
-  P <- a$P
-  #print(D)
-  #print(P)
+  all.D[[i]] <- a$D
+  all.P[[i]] <- a$P
+  print(i/length(roads.unique))
 }
 
 data.garbage <- data.sites$organic
-x <- initialSolution(data.garbage, D, P)
-cost(x, data.garbage)
+x.organic <- greedySolution(data.garbage)
+costVector(x.organic, data.garbage)
 
 data.garbage <- data.sites$plastic
-x <- initialSolution(data.garbage, D, P)
-cost(x, data.garbage)
+x.plastic <- greedySolution(data.garbage)
+costVector(x.plastic, data.garbage)
 
 data.garbage <- data.sites$paper
-x <- initialSolution(data.garbage, D, P)
-cost(x, data.garbage)
+x.paper <- greedySolution(data.garbage)
+costVector(x.paper, data.garbage)
+
+writeSolution(4, x.organic, x.plastic, x.paper)
