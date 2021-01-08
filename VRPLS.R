@@ -309,7 +309,7 @@ neighborhood <- function(x) {
   }
   
   # swap a number
-  "for(i in 2:(length(x)-1)) {
+  for(i in 2:(length(x)-1)) {
     num <- x[i]
     for(k in 1:num.sites) {
       if(k != num) {
@@ -329,7 +329,7 @@ neighborhood <- function(x) {
         }
       }
     }
-  }"
+  }
   
   return(n)
 }
@@ -343,19 +343,6 @@ checkValid <- function(t) {
   }
   
   for(i in 2:length(t)) {
-<<<<<<< HEAD
-    # road <- unname(roads.length[toString(c(t[i-1], t[i]))])[[1]]
-    
-    #if (is.null(road)) {
-    #  return(FALSE)
-    #}
-=======
-    road <- unname(roads.length[toString(c(t[i-1], t[i]))])[[1]]
-    
-    if (is.null(road)) {
-      return(FALSE)
-    }
->>>>>>> 6b9e862ec5c09701dff4d9397ded1a595546e18c
     
     if(t[i-1] == t[i]) {
       return(FALSE)
