@@ -133,27 +133,21 @@ cost <- function(x, data.garbage) {
   return(cost.all)
 }
 
-initialSolution <- function(data.garbage, D, P) {
-  s0 <- c(1)
-  idx <- 1
-  tmp <- c(1)
-  carry <- 0
-  while(length(unique(s0)) < num.sites) {
-    # construct a path from idx to next
-    #possible <- data.roads[which(data.roads$start == tmp[idx] & data.roads$carry >= carry),]
-    #neighbors <- unique(possible$end)
-    
-    closest <- order(D[tmp[idx],])
+# construct a path from idx to next
+#possible <- data.roads[which(data.roads$start == tmp[idx] & data.roads$carry >= carry),]
+#neighbors <- unique(possible$end)
+"closest <- order(D[tmp[idx],])
     closest.idx <- 0
     for(i in 2:length(closest)) {
       if(!closest[i] %in% tmp & data.garbage[closest[i]] > 0) {
         closest.idx <- closest[i]
+        break
       }
     }
-    if(data.garbage[closest[i]] + carry <= num.carry) { # closest can be collected
-      carry <- carry + data.garbage[closest[i]]
-      data.garbage[closest[i]] <- 0
-      tmp <- c(tmp, closest[i])
+    if(data.garbage[closest.idx] + carry <= num.carry) { # closest can be collected
+      carry <- carry + data.garbage[closest.idx]
+      data.garbage[closest.idx] <- 0
+      tmp <- c(tmp, closest.idx)
       idx <- idx + 1
     } else { # closest cannot be collected
       found <- FALSE
@@ -171,16 +165,47 @@ initialSolution <- function(data.garbage, D, P) {
       
       if(!found) { # no full neighbor that can be collected
         # go back
-        if(P[tmp[idx], 1] == -1) {
-          tmp <- c(tmp, 1)
-          s0 <- c(s0, tmp[-1])
+        tmp <- c(tmp, rev(tmp)[-1]) # same way
+        s0 <- c(s0, tmp[-1])
+        tmp <- c(1)
+        idx <- 1
+      }
+    }"
+
+
+initialSolution <- function(data.garbage, D) {
+  s0 <- c(1)
+  
+  while(length(unique(s0)) < num.sites) {
+    node <- 1
+    carry <- 0
+    tmp <- c(node)
+    d <- D[node,]
+    d[which((data.garbage+carry) > num.carry | data.garbage == 0)] <- Inf
+    closest <- order(d)
+    while(TRUE) {
+      for(i in 1:length(closest)) {
+        if(closest[i] != node) {
+          closest.idx <- closest[i]
+          break
         }
       }
+      
+      carry <- carry + data.garbage[closest.idx]
+      data.garbage[closest.idx] <- 0
+      tmp <- c(tmp, closest.idx)
+      node <- closest.idx
+      
+      d <- D[node,]
+      d[which((data.garbage+carry) > num.carry | data.garbage == 0)] <- Inf
+      closest <- order(d)
+      if(d[closest[1]] == Inf) {
+        break
+      }
     }
-    
-    
-    
+    s0 <- c(s0, tmp[-1], 1)
   }
+  return(s0)
 }
 
 d <- readData(1)
@@ -192,3 +217,6 @@ data.roads <- d$data.roads
 a <- allPairsShortestPath(data.roads)
 D <- a$D
 P <- a$P
+data.garbage <- data.sites$organic
+
+initialSolution(data.garbage, D)
