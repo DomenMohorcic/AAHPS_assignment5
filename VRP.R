@@ -124,11 +124,6 @@ allPairsShortestPath <- function(roads, w) {
 }
 
 costVector <- function(x, data.garbage) {
-  "name <- toString(x)
-  if(!is.null(memo[[name]])) {
-    return(memo[[name]]$cost)
-  }"
-  
   cost.all <- 0
   carry <- 0 # how much current truck is carrying
   len <- 0 # current trip length
@@ -176,10 +171,6 @@ costVector <- function(x, data.garbage) {
       cost.trip <- cost.trip + len*0.1
       cost.all <- cost.all + cost.trip
       
-      #sofar.name <- toString(x[1:i])
-      #to.memo <- list("cost" = cost.all, "garbage" = data.garbage)
-      #memo[[sofar.name]] <<- to.memo
-      
       carry <- 0
       len <- 0
       time <- 0
@@ -193,8 +184,111 @@ costVector <- function(x, data.garbage) {
     return(Inf)
     cost.all <- cost.all + penalty.garbage*sum(data.garbage)
   }
-  #to.memo <- list("cost" = cost.all, "garbage" = data.garbage)
-  #memo[[sofar.name]] <<- to.memo
+  
+  return(cost.all)
+}
+
+costPerm <- function(perm, data.garbage) {
+  vector.form <- c(1)
+  cost.all <- 0
+  carry <- 0
+  len <- 0
+  time <- 0
+  cost.trip <- 10
+  
+  prev <- 1
+  for(i in 1:length(perm)) {
+    node <- perm[i] # kje pobiramo smeti
+    
+    idx <- which.max(roads.unique >= carry) # indeks za matriko P in D
+    path <- findPath(prev, node, idx) # iscemo najkrajso pot
+    if(length(path) > 0) {
+      for(j in 1:length(path)) { # simuliraj pot
+        if(carry + data.garbage[path[j]] <= num.carry & data.garbage[path[j]] > 0) {
+          # na poti smo nekaj pobrali pa ne bi smeli
+          return(Inf)
+        }
+        if(path[j] == 1) {
+          len <- len + all.D[[idx]][prev, 1]
+          time <- time + 0.5 + len/50
+          if(time > 8) {
+            cost.trip <- cost.trip + 80 + (time-8)*20
+          } else {
+            cost.trip <- cost.trip + time*10
+          }
+          cost.trip <- cost.trip + len*0.1
+          cost.all <- cost.all + cost.trip
+          
+          vector.form <- c(vector.form, path[1:j])
+          #print(vector.form)
+          
+          carry <- 0
+          len <- 0
+          time <- 0
+          cost.trip <- 10
+          prev <- 1
+        }
+      }
+    }
+    
+    if(carry + data.garbage[node] >= num.carry) { # stop at depot in the way (forced)
+      path <- findPath(prev, 1, idx)
+      if(length(path) > 0) {
+        for(j in 1:length(path)) { # simuliraj pot
+          if(carry + data.garbage[path[j]] <= num.carry & data.garbage[path[j]] > 0) {
+            # na poti smo nekaj pobrali pa ne bi smeli
+            return(Inf)
+          }
+        }
+      }
+      
+      len <- len + all.D[[idx]][prev, 1]
+      time <- time + 0.5 + len/50
+      if(time > 8) {
+        cost.trip <- cost.trip + 80 + (time-8)*20
+      } else {
+        cost.trip <- cost.trip + time*10
+      }
+      cost.trip <- cost.trip + len*0.1
+      cost.all <- cost.all + cost.trip
+      
+      vector.form <- c(vector.form, path, 1)
+      #print(vector.form)
+      
+      carry <- 0
+      len <- 0
+      time <- 0
+      cost.trip <- 10
+      prev <- 1
+    }
+    
+    idx <- which.max(roads.unique >= carry)
+    path <- findPath(prev, node, idx)
+    vector.form <- c(vector.form, path, node)
+    #print(vector.form)
+    
+    idx <- which.max(roads.unique >= carry)
+    len <- len + all.D[[idx]][prev, node]
+    carry <- carry + data.garbage[node]
+    data.garbage[node] <- 0
+    time <- time + 0.2
+    prev <- node
+  }
+  
+  idx <- which.max(roads.unique >= carry)
+  path <- findPath(prev, 1, idx)
+  vector.form <- c(vector.form, path, 1)
+  print(vector.form)
+  
+  len <- len + all.D[[idx]][prev, 1]
+  time <- time + 0.5 + len/50
+  if(time > 8) {
+    cost.trip <- cost.trip + 80 + (time-8)*20
+  } else {
+    cost.trip <- cost.trip + time*10
+  }
+  cost.trip <- cost.trip + len*0.1
+  cost.all <- cost.all + cost.trip
   
   return(cost.all)
 }
@@ -214,6 +308,7 @@ findPath <- function(start, end, idx) {
 
 greedySolution <- function(data.garbage) {
   s0 <- c(1)
+  perm.form <- c()
   
   while(sum(data.garbage) > 0) {
     node <- 1
@@ -236,6 +331,7 @@ greedySolution <- function(data.garbage) {
         break
       }
       
+      perm.form <- c(perm.form, closest.idx)
       carry <- carry + data.garbage[closest.idx]
       data.garbage[closest.idx] <- 0
       tmp <- c(tmp, path, closest.idx)
@@ -254,7 +350,25 @@ greedySolution <- function(data.garbage) {
     
     s0 <- c(s0, tmp[-1], path, 1)
   }
-  return(s0)
+  return(list("s0" = s0, "perm" = perm.form))
+}
+
+toMatrix <- function(x) {
+  mat <- c()
+  idx <- 1
+  cut <- 2
+  for (i in 2:length(x)) {
+    if (x[i] == 1) {
+      mat[[idx]] <- c(1, x[cut:i])
+      idx <- idx + 1
+      cut <- i + 1
+    }
+  }
+  return(mat)
+}
+
+toPerm <- function(x) {
+  return(x[which(x != 1)])
 }
 
 neighborhoodPerm <- function(perm) {
@@ -273,20 +387,6 @@ neighborhoodPerm <- function(perm) {
   }
   
   return(n)
-}
-
-toMatrix <- function(n) {
-  mat <- c()
-  idx <- 1
-  cut <- 2
-  for (i in 2:length(n)) {
-    if (n[i] == 1) {
-      mat[[idx]] <- c(1, n[cut:i])
-      idx <- idx + 1
-      cut <- i + 1
-    }
-  }
-  return(mat)
 }
 
 writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
@@ -309,6 +409,8 @@ writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
   close(conn)
 }
 
+
+
 d <- readData(6)
 num.sites <- d$num.sites
 num.carry <- d$num.carry
@@ -320,6 +422,11 @@ roads.unique <- unique(data.roads$carry)
 roads.unique <- roads.unique[order(roads.unique)]
 length(roads.unique)
 
+penalty.length <- sum(data.roads$length)*100
+penalty.carry <- 2
+penalty.garbage <- 2
+
+
 all.D <- c()
 all.P <- c()
 for (i in 1:length(roads.unique)) {
@@ -330,15 +437,24 @@ for (i in 1:length(roads.unique)) {
 }
 
 data.garbage <- data.sites$organic
-x.organic <- greedySolution(data.garbage)
-costVector(x.organic, data.garbage)
+x <- greedySolution(data.garbage)
+x.organic <- x$s0
+v1 <- costVector(x.organic, data.garbage)
+v2 <- costPerm(x$perm, data.garbage)
+v1/v2
 
 data.garbage <- data.sites$plastic
-x.plastic <- greedySolution(data.garbage)
-costVector(x.plastic, data.garbage)
+x <- greedySolution(data.garbage)
+x.plastic <- x$s0
+v1 <- costVector(x.plastic, data.garbage)
+v2 <- costPerm(x$perm, data.garbage)
+v1/v2
 
 data.garbage <- data.sites$paper
-x.paper <- greedySolution(data.garbage)
-costVector(x.paper, data.garbage)
+x <- greedySolution(data.garbage)
+x.paper <- x$s0
+v1 <- costVector(x.paper, data.garbage)
+v2 <- costPerm(x$perm, data.garbage)
+v1/v2
 
-writeSolution(4, x.organic, x.plastic, x.paper)
+#writeSolution(4, x.organic, x.plastic, x.paper)
