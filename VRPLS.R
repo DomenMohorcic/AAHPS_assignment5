@@ -201,7 +201,6 @@ cost <- function(x, data.garbage, memo) {
       # invalid road
     }
     
-    
     # garbage to collect
     if(data.garbage[x[i]] > 0) {
       carry.next <- carry + data.garbage[x[i]]
@@ -216,11 +215,11 @@ cost <- function(x, data.garbage, memo) {
     if(x[i] == 1) {
       time <- time + 0.5 + len/50
       if(time > 8) {
-        time <- c(8, time-8)
+        cost <- cost + 80 + (time-8)*20
       } else {
-        time <- c(time, 0)
+        cost <- cost + time*10
       }
-      cost <- cost + len*0.1 + sum(time*c(10, 20))
+      cost <- cost + len*0.1
       cost.all <- cost.all + cost
       
       sofar.name <- toString(x[1:i])
@@ -233,6 +232,11 @@ cost <- function(x, data.garbage, memo) {
       cost <- 10
     }
   }
+  
+  if(sum(data.garbage) > 0) {
+    # not everything collected
+  }
+  
   return(list("cost" = cost.all, "memo" = memo))
 }
 
