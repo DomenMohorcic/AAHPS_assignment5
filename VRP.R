@@ -96,7 +96,9 @@ allPairsShortestPath <- function(roads, w) {
   C <- matrix(Inf, nrow = num.sites, ncol = num.sites)
   for(i in 1:nrow(roads)) {
     if (roads[i, "carry"] >= w) {
-      C[roads[i,"start"], roads[i, "end"]] <- roads[i,"length"]
+      if(C[roads[i,"start"], roads[i, "end"]] > roads[i,"length"]) {
+        C[roads[i,"start"], roads[i, "end"]] <- roads[i,"length"]
+      }
     }
   }
   D <- matrix(0, nrow = num.sites, ncol = num.sites)
@@ -519,7 +521,7 @@ writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
   close(conn)
 }
 
-d <- readData(2)
+d <- readData(4)
 num.sites <- d$num.sites
 num.carry <- d$num.carry
 data.sites <- d$data.sites
@@ -533,7 +535,6 @@ length(roads.unique)
 penalty.length <- sum(data.roads$length)*100
 penalty.carry <- 2
 penalty.garbage <- 2
-
 
 all.D <- c()
 all.P <- c()
