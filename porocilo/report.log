@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 20.11) (preloaded format=pdflatex 2020.11.28)  9 JAN 2021 14:49
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 20.11) (preloaded format=pdflatex 2020.11.28)  9 JAN 2021 19:34
 entering extended mode
 **c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex
 (c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex
@@ -340,22 +340,22 @@ Overfull \hbox (76.47485pt too wide) in paragraph at lines 85--87
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][] 
  []
 
-[2] [3] [4] [5] (c:/Users\dmoho\Documents\FRI\3_letnik_1_semester\AAHPS\Assignment5\porocilo\report.aux)
+[2] [3] [4] (c:/Users\dmoho\Documents\FRI\3_letnik_1_semester\AAHPS\Assignment5\porocilo\report.aux)
 Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: 6A14535A0410979F9A62977C707A588C;245.
  ) 
 Here is how much of TeX's memory you used:
- 9267 strings out of 479765
- 144124 string characters out of 2866190
- 466219 words of memory out of 3000000
+ 9266 strings out of 479765
+ 144118 string characters out of 2866190
+ 467219 words of memory out of 3000000
  26117 multiletter control sequences out of 15000+200000
  544438 words of font info for 65 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  66i,7n,74p,376b,1299s stack positions out of 5000i,500n,10000p,200000b,50000s
  <C:\Users\dmoho\AppData\Local\MiKTeX\2.9\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1200.pk><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss12.pfb><C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on c:/Users\dmoho\Documents\FRI\3_letnik_1_semester\AAHPS\Assignment5\porocilo\report.pdf (5 pages, 91204 bytes).
+Output written on c:/Users\dmoho\Documents\FRI\3_letnik_1_semester\AAHPS\Assignment5\porocilo\report.pdf (4 pages, 93462 bytes).
 PDF statistics:
- 96 PDF objects out of 1000 (max. 8388607)
- 28 named destinations out of 1000 (max. 500000)
+ 92 PDF objects out of 1000 (max. 8388607)
+ 27 named destinations out of 1000 (max. 500000)
  33 words of extra memory for PDF output out of 10000 (max. 10000000)
 
