@@ -464,8 +464,6 @@ AlgorithmLS <- function(s0, data.garbage, percent) {
     
     f <- c()
     
-    ## MEMOIZACIJA ZA COST!? ## sploh za neveljavne ...
-    
     # calculate all fitness values for neighborhood
     for (i in 1:length(n)) {
       f[i] <- costPerm(n[[i]], data.garbage)$cost
@@ -552,7 +550,6 @@ writeSolution <- function(name, folder, sol.organic, sol.plastic, sol.paper, cos
   close(conn)
 }
 
-
 num.file <- 2
 num.percent <- 1
 
@@ -584,7 +581,7 @@ for (i in 1:length(roads.unique)) {
 
 ###############################################################################
 #                                                                             #
-#                           TESTING ALGORITHMS                                #
+#                             SA ALGORITHMS                                   #
 #                                                                             #
 ###############################################################################
 
