@@ -594,8 +594,8 @@ for (i in 1:length(roads.unique)) {
 #                                                                             #
 ###############################################################################
 
-num.file <- 8
-num.percent <- 0.01
+num.file <- 7
+num.percent <- 0.02
 
 data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
