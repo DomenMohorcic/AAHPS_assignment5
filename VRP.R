@@ -130,6 +130,8 @@ costVector <- function(x, data.garbage) {
   time <- 0 # current trip time
   cost.trip <- 10
   
+  totalTripLen <- 0
+  
   for(i in 2:length(x)) {
     # which road to take
     road.name <- toString(c(x[i-1], x[i]))
@@ -139,14 +141,15 @@ costVector <- function(x, data.garbage) {
       idx <- which.max(possible.carry)
       if(possible.carry[idx]) {
         len <- len + possible.road[idx]
+        totalTripLen <- totalTripLen + possible.road[idx]
       } else {
         # invalid road
-        len <- len + penalty.length
+        #len <- len + penalty.length
         return(road.name)
       }
     } else {
       # invalid road
-      len <- len + penalty.length
+      #len <- len + penalty.length
       return(road.name)
     }
     
@@ -185,6 +188,8 @@ costVector <- function(x, data.garbage) {
     cost.all <- cost.all + penalty.garbage*sum(data.garbage)
   }
   
+  print("totalTripLen")
+  print(totalTripLen)
   return(cost.all)
 }
 
@@ -195,6 +200,8 @@ costPerm <- function(perm, data.garbage) {
   len <- 0
   time <- 0
   cost.trip <- 10
+  
+  totalTripLen <- 0
   
   prev <- 1
   for(i in 1:length(perm)) {
@@ -208,14 +215,17 @@ costPerm <- function(perm, data.garbage) {
           # na poti smo nekaj pobrali pa ne bi smeli
           return(Inf)
         }
+        
         if(path[j] == 1) {
           len <- len + all.D[[idx]][prev, 1]
+          totalTripLen <- totalTripLen + all.D[[idx]][prev, 1]
           time <- time + 0.5 + len/50
           if(time > 8) {
             cost.trip <- cost.trip + 80 + (time-8)*20
           } else {
             cost.trip <- cost.trip + time*10
           }
+          
           cost.trip <- cost.trip + len*0.1
           cost.all <- cost.all + cost.trip
           
@@ -243,12 +253,15 @@ costPerm <- function(perm, data.garbage) {
       }
       
       len <- len + all.D[[idx]][prev, 1]
+      totalTripLen <- totalTripLen + all.D[[idx]][prev, 1]
       time <- time + 0.5 + len/50
+      
       if(time > 8) {
         cost.trip <- cost.trip + 80 + (time-8)*20
       } else {
         cost.trip <- cost.trip + time*10
       }
+      
       cost.trip <- cost.trip + len*0.1
       cost.all <- cost.all + cost.trip
       
@@ -269,6 +282,7 @@ costPerm <- function(perm, data.garbage) {
     
     idx <- which.max(roads.unique >= carry)
     len <- len + all.D[[idx]][prev, node]
+    totalTripLen <- totalTripLen + all.D[[idx]][prev, node]
     carry <- carry + data.garbage[node]
     data.garbage[node] <- 0
     time <- time + 0.2
@@ -278,17 +292,24 @@ costPerm <- function(perm, data.garbage) {
   idx <- which.max(roads.unique >= carry)
   path <- findPath(prev, 1, idx)
   vector.form <- c(vector.form, path, 1)
-  print(vector.form)
+  #print("Perm solution")
+  #print(vector.form)
   
   len <- len + all.D[[idx]][prev, 1]
+  totalTripLen <- totalTripLen + all.D[[idx]][prev, 1]
   time <- time + 0.5 + len/50
+  
   if(time > 8) {
     cost.trip <- cost.trip + 80 + (time-8)*20
   } else {
     cost.trip <- cost.trip + time*10
   }
+  
   cost.trip <- cost.trip + len*0.1
   cost.all <- cost.all + cost.trip
+  
+  #print("totalTripLen")
+  #print(totalTripLen)
   
   return(cost.all)
 }
@@ -375,6 +396,10 @@ neighborhoodPerm <- function(perm) {
   n <- c()
   idx <- 1
   
+  # tole je dejansko ful dobr neighborhood!
+  # sam se pogledat treba, kere ven meceva (neveljavne)
+  # memoizacijo se mogoce splaca delat ... sploh za Inf vrednosti
+  # da se jih ne gre skos racunat ...
   for (i in 1:(length(perm)-1)) {
     for (j in (i + 1):length(perm)) {
       n.v <- perm
@@ -386,7 +411,92 @@ neighborhoodPerm <- function(perm) {
     }
   }
   
+  "for (i in 2:(length(perm)-1)) {
+    n.v <- perm
+    tmp <- n.v[i]
+    n.v[i] <- n.v[i-1]
+    n.v[i-1] <- tmp
+    n[[idx]] <- n.v
+    idx <- idx + 1
+  }
+  
+  for (i in 3:(length(perm)-1)) {
+    n.v <- perm
+    tmp <- n.v[i]
+    n.v[i] <- n.v[i-2]
+    n.v[i-2] <- tmp
+    n[[idx]] <- n.v
+    idx <- idx + 1
+  }"
+  
   return(n)
+}
+
+AlgorithmLS <- function(s0, data.garbage) {
+  sm <- s0
+  fc <- costPerm(sm, data.garbage)
+  
+  while(TRUE) {
+    n <- neighborhoodPerm(s0)
+    f <- c()
+    
+    ## MEMOIZACIJA ZA COST!? ## sploh za neveljavne ...
+    
+    # calculate all fitness values for neighborhood
+    for (i in 1:length(n)) {
+      f[i] <- costPerm(n[[i]], data.garbage)
+    }
+    
+    # find best (min) fitness function for neighborhood
+    best.idx <- which.min(f)
+    
+    if (f[best.idx] < fc) {
+      sm <- n[[best.idx]]
+      s0 <- n[[best.idx]]
+      fc <- f[best.idx]
+      print(fc)
+    } else {
+      break
+    }
+  }
+  return(sm)
+}
+
+AlgorithmSA <- function(s0, lambda, t, data.garbage) {
+  s <- s0
+  sm <- s0
+  
+  while (t >= 1) {
+    n <- neighborhoodPerm(s)
+    rand <- sample(1:length(n), 1)
+    sc <- n[[rand]]
+    
+    fm <- costPerm(sm, data.garbage)
+    fc <- costPerm(sc, data.garbage)
+    f <- costPerm(s, data.garbage)
+    
+    if (fc < fm) {
+      sm <- sc
+    }
+    
+    if (fc < f) {
+      s <- sc
+    } else {
+      prob <- exp(-(fc - f) / t)
+      #print(prob)
+      t <- t * lambda
+      # print(t)
+      if(runif(1, 0, 1) < prob) {
+        #print("Chosen worse")
+        s <- sc
+      }
+    }
+  }
+  
+  # end with LS
+  sm <- AlgorithmLS(sm, data.garbage)
+  
+  return(sm)
 }
 
 writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
@@ -409,9 +519,7 @@ writeSolution <- function(name, sol.organic, sol.plastic, sol.paper) {
   close(conn)
 }
 
-
-
-d <- readData(6)
+d <- readData(2)
 num.sites <- d$num.sites
 num.carry <- d$num.carry
 data.sites <- d$data.sites
@@ -436,7 +544,7 @@ for (i in 1:length(roads.unique)) {
   print(i/length(roads.unique))
 }
 
-data.garbage <- data.sites$organic
+"data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
 x.organic <- x$s0
 v1 <- costVector(x.organic, data.garbage)
@@ -455,6 +563,31 @@ x <- greedySolution(data.garbage)
 x.paper <- x$s0
 v1 <- costVector(x.paper, data.garbage)
 v2 <- costPerm(x$perm, data.garbage)
-v1/v2
+v1/v2"
 
-#writeSolution(4, x.organic, x.plastic, x.paper)
+# writeSolution(4, x.organic, x.plastic, x.paper)
+
+
+###############################################################################
+#                                                                             #
+#                           TESTING ALGORITHMS                                #
+#                                                                             #
+###############################################################################
+
+data.garbage <- data.sites$organic
+x <- greedySolution(data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 10000, data.garbage)
+x.organic <- costPerm(found, data.garbage)
+
+data.garbage <- data.sites$plastic
+x <- greedySolution(data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 10000, data.garbage)
+x.plastic <- costPerm(found, data.garbage)
+
+data.garbage <- data.sites$paper
+x <- greedySolution(data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 10000, data.garbage)
+x.paper <- costPerm(found, data.garbage)
+
+print("Final cost")
+print(x.organic + x.plastic + x.paper)
