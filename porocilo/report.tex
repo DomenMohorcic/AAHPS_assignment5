@@ -90,6 +90,8 @@ while( exists a location with uncollected garbage ) {
 }
 \end{lstlisting}
 
+\newpage
+
 The above pseudocode is implemented in funciton {\sf greedySolution}. Its
 parameter is a vector of garbage data from locations. It returns a solution in
 two different forms: a complete route for all trips combined (e.g. 1 2 3 1 5 1
@@ -120,18 +122,49 @@ We got the following results for problems:
 
 \section{Simulated annealing with probabilistic local search}
 
-For local search solution we implemented simulated annealing with local search.
+For our local search solution we implemented simulated annealing with 
+probabilistic local search.
 Simulated annealing starts with a initial solution and iteratively switches to
 better random neighboring solution or with a probability to a worse one. This
 probability depends on temperature and is high at the beginning. Temperature
 decreases every time our random neighbor is not better. When temperature drops
-below a certain value we find local solution using probabilistic local search.
-We opted to go with probabilistic so that only a portion of the neighborhood is
-evaluated as it can become very big.
+below a certain value we find a local solution using 
+our best current solution from simulated annealing and probabilistic local search.
+We opted to go with probabilistic so that we can control
+how big of  a portion of the neighborhood is evaluated as it can become very big.
 
 Our solutions are represented in permutation form with fixed length. Solution
 2 3 5 4 means we have to find paths 2-3, 3-5 and 5-4 such that nothing is
 collected in between. This representation simplifies neighborhood calculation
-since we can use simple swaps of elements as in TSP.
+since we can use simple swaps of elements similarly as in TSP.
+
+Our probabilistic local search takes a certain random portion (passed as parameter)
+of the calculated neighborhood and calculates the cost for all neighboring solutions 
+and takes the best neighboring. This cost is then compared to the best one known 
+so far. If it is better than the current best, it does the whole process again, 
+otherwise it returns the known best solution.
+
+Our cost function for evaluating solutions in permutation form also uses
+precalculated matrices for shortest paths for every node combination with
+respect to carrying capacity of a vehicle.
+
+We got the following results for problems:
+\begin{center}
+\begin{tabular}{ c|c }
+	Problem & Cost \\
+	\hline
+	1 & 159.57 \\
+	2 & 928.64 \\
+	3 & 4316.14 \\
+	4 & 18508.77 \\
+	5 & 8913.48 \\
+	6 & 1277.69 \\
+	7 & ? \\
+	8 & ? \\
+	9 & 154455.98 \\
+	10 & 68551.81 \\
+\end{tabular}
+\end{center}
+
 
 \end{document}
