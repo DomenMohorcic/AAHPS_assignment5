@@ -559,8 +559,8 @@ writeSolution <- function(name, folder, sol.organic, sol.plastic, sol.paper, cos
   close(conn)
 }
 
-num.file <- 2
-num.percent <- 1
+num.file <- 9
+num.percent <- 0.1
 
 d <- readData(num.file)
 num.sites <- d$num.sites
@@ -594,8 +594,8 @@ for (i in 1:length(roads.unique)) {
 #                                                                             #
 ###############################################################################
 
-num.file <- 8
-num.percent <- 0.01
+num.file <- 9
+num.percent <- 0.1
 
 data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
@@ -619,7 +619,7 @@ print("Final cost")
 final <- x.organic + x.plastic + x.paper
 print(final)
 
-writeSolution(num.file, "solutionsLS/Solution", 
+writeSolution(num.file, "solutionsLS/Solution.Larsen", 
               path.organic, path.plastic, path.paper, final)
 
 print(path.organic)
