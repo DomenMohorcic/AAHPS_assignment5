@@ -192,8 +192,8 @@ costVector <- function(x, data.garbage) {
     cost.all <- cost.all + penalty.garbage*sum(data.garbage)
   }
   
-  print("totalTripLen")
-  print(totalTripLen)
+  #print("totalTripLen")
+  #print(totalTripLen)
   return(cost.all)
 }
 
@@ -450,7 +450,7 @@ neighborhoodPerm <- function(perm) {
   return(n)
 }
 
-AlgorithmLS <- function(s0, data.garbage) {
+AlgorithmLS <- function(s0, data.garbage, percent) {
   sm <- s0
   fc <- costPerm(sm, data.garbage)$cost
   
@@ -459,7 +459,7 @@ AlgorithmLS <- function(s0, data.garbage) {
     
     ####  probabilistic LS  ##############
     rand <- sample(2:length(n))
-    n <- n[rand[1:round(length(n) * 0.1)]]
+    n <- n[rand[1:round(length(n) * percent)]]
     ######################################
     
     f <- c()
@@ -488,7 +488,7 @@ AlgorithmLS <- function(s0, data.garbage) {
   return(sm)
 }
 
-AlgorithmSA <- function(s0, lambda, t, data.garbage) {
+AlgorithmSA <- function(s0, lambda, t, data.garbage, percent) {
   s <- s0
   sm <- s0
   
@@ -520,7 +520,7 @@ AlgorithmSA <- function(s0, lambda, t, data.garbage) {
   }
   
   # end with LS
-  sm <- AlgorithmLS(sm, data.garbage)
+  sm <- AlgorithmLS(sm, data.garbage, percent)
   
   return(sm)
 }
@@ -553,7 +553,8 @@ writeSolution <- function(name, folder, sol.organic, sol.plastic, sol.paper, cos
 }
 
 
-num.file <- 4
+num.file <- 2
+num.percent <- 1
 
 d <- readData(num.file)
 num.sites <- d$num.sites
@@ -589,19 +590,19 @@ for (i in 1:length(roads.unique)) {
 
 data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
-found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage, num.percent)
 x.organic <- costPerm(found, data.garbage)$cost
 path.organic <- costPerm(found, data.garbage)$path
 
 data.garbage <- data.sites$plastic
 x <- greedySolution(data.garbage)
-found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage, num.percent)
 x.plastic <- costPerm(found, data.garbage)$cost
 path.plastic <- costPerm(found, data.garbage)$path
 
 data.garbage <- data.sites$paper
 x <- greedySolution(data.garbage)
-found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage)
+found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage, num.percent)
 x.paper <- costPerm(found, data.garbage)$cost
 path.paper <- costPerm(found, data.garbage)$path
 
@@ -613,4 +614,38 @@ print(path.plastic)
 print(path.paper)
 
 writeSolution(num.file, "solutionsLS/Solution", 
+              path.organic, path.plastic, path.paper, final)
+
+
+###############################################################################
+#                                                                             #
+#                              GREEDY SOLUTION                                #
+#                                                                             #
+###############################################################################
+
+num.file <- 10
+
+data.garbage <- data.sites$organic
+x <- greedySolution(data.garbage)
+x.organic <- costVector(x$s0, data.garbage)
+path.organic <- x$s0
+
+data.garbage <- data.sites$plastic
+x <- greedySolution(data.garbage)
+x.plastic <- costVector(x$s0, data.garbage)
+path.plastic <- x$s0
+
+data.garbage <- data.sites$paper
+x <- greedySolution(data.garbage)
+x.paper <- costVector(x$s0, data.garbage)
+path.paper <- x$s0
+
+print("Final cost")
+final <- x.organic + x.plastic + x.paper
+print(final)
+print(path.organic)
+print(path.plastic)
+print(path.paper)
+
+writeSolution(num.file, "solutionsGreedy/Solution", 
               path.organic, path.plastic, path.paper, final)
