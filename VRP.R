@@ -283,6 +283,15 @@ costPerm <- function(perm, data.garbage) {
     
     idx <- which.max(roads.unique >= carry)
     path <- findPath(prev, node, idx)
+    if(length(path) > 0) {
+      for(j in 1:length(path)) { # simuliraj pot
+        if(carry + data.garbage[path[j]] <= num.carry & data.garbage[path[j]] > 0) {
+          # na poti smo nekaj pobrali pa ne bi smeli
+          # memo[[name]] <<- Inf
+          return(list("cost" = Inf, "path" = NULL))
+        }
+      }
+    }
     vector.form <- c(vector.form, path, node)
     #print(vector.form)
     
@@ -458,7 +467,7 @@ AlgorithmLS <- function(s0, data.garbage, percent) {
     n <- neighborhoodPerm(s0)
     
     ####  probabilistic LS  ##############
-    rand <- sample(2:length(n))
+    rand <- sample(1:length(n))
     n <- n[rand[1:round(length(n) * percent)]]
     ######################################
     
@@ -585,6 +594,9 @@ for (i in 1:length(roads.unique)) {
 #                                                                             #
 ###############################################################################
 
+num.file <- 8
+num.percent <- 0.01
+
 data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
 found <- AlgorithmSA(x$perm, 0.95, 20000, data.garbage, num.percent)
@@ -606,12 +618,13 @@ path.paper <- costPerm(found, data.garbage)$path
 print("Final cost")
 final <- x.organic + x.plastic + x.paper
 print(final)
-print(path.organic)
-print(path.plastic)
-print(path.paper)
 
 writeSolution(num.file, "solutionsLS/Solution", 
               path.organic, path.plastic, path.paper, final)
+
+print(path.organic)
+print(path.plastic)
+print(path.paper)
 
 
 ###############################################################################
@@ -620,7 +633,7 @@ writeSolution(num.file, "solutionsLS/Solution",
 #                                                                             #
 ###############################################################################
 
-num.file <- 10
+num.file <- 8
 
 data.garbage <- data.sites$organic
 x <- greedySolution(data.garbage)
@@ -640,9 +653,10 @@ path.paper <- x$s0
 print("Final cost")
 final <- x.organic + x.plastic + x.paper
 print(final)
-print(path.organic)
-print(path.plastic)
-print(path.paper)
 
 writeSolution(num.file, "solutionsGreedy/Solution", 
               path.organic, path.plastic, path.paper, final)
+
+print(path.organic)
+print(path.plastic)
+print(path.paper)

@@ -63,6 +63,8 @@ can treat each garbage type as its own problem.
 We used two different approaches for solving this problem. One is a greedy
 algorithm and the other is simulated annealing with probabilistic local search.
 
+\newpage
+
 \section{Greedy algorithm}
 
 The idea of our greedy algorithm is to travel to the nearest site with garbage,
@@ -90,8 +92,6 @@ while( exists a location with uncollected garbage ) {
 }
 \end{lstlisting}
 
-\newpage
-
 The above pseudocode is implemented in funciton {\sf greedySolution}. Its
 parameter is a vector of garbage data from locations. It returns a solution in
 two different forms: a complete route for all trips combined (e.g. 1 2 3 1 5 1
@@ -100,37 +100,19 @@ precalculated matrices for shortest paths for every node combination with
 respect to carrying capacity of a vehicle. We calculated it using modified
 Floyd Warshall algorithm.
 
-We got the following results for problems:
-\begin{center}
-\begin{tabular}{ c|c }
-	Problem & Cost \\
-	\hline
-	1 & 178.70 \\
-	2 & 965.89 \\
-	3 & 4815.14 \\
-	4 & 21143.48 \\
-	5 & 10562.16 \\
-	6 & 1368.44 \\
-	7 & ? \\
-	8 & ? \\
-	9 & 161712.63 \\
-	10 & 80045.22 \\
-\end{tabular}
-\end{center}
-
 \newpage
 
-\section{Simulated annealing with probabilistic local search}
+\section{Simulated annealing with probabilistic local search - SAPLS}
 
 For our local search solution we implemented simulated annealing with 
 probabilistic local search.
-Simulated annealing starts with a initial solution and iteratively switches to
+Simulated annealing starts with an initial solution and iteratively switches to
 better random neighboring solution or with a probability to a worse one. This
 probability depends on temperature and is high at the beginning. Temperature
 decreases every time our random neighbor is not better. When temperature drops
 below a certain value we find a local solution using 
 our best current solution from simulated annealing and probabilistic local search.
-We opted to go with probabilistic so that we can control
+We decided to go with probabilistic so that we can control
 how big of  a portion of the neighborhood is evaluated as it can become very big.
 
 Our solutions are represented in permutation form with fixed length. Solution
@@ -140,7 +122,7 @@ since we can use simple swaps of elements similarly as in TSP.
 
 Our probabilistic local search takes a certain random portion (passed as parameter)
 of the calculated neighborhood and calculates the cost for all neighboring solutions 
-and takes the best neighboring. This cost is then compared to the best one known 
+and takes the best neighbor. This cost is then compared to the best one known 
 so far. If it is better than the current best, it does the whole process again, 
 otherwise it returns the known best solution.
 
@@ -148,23 +130,31 @@ Our cost function for evaluating solutions in permutation form also uses
 precalculated matrices for shortest paths for every node combination with
 respect to carrying capacity of a vehicle.
 
-We got the following results for problems:
+The key to calculating good solutions relatively fast is in starting soltion.
+If it is bad, neighboring solutions are also bad and it can take some time to
+reach good solutions. First we tried to randomly generate initial solution, but
+later realised we can use the solution of our greedy algorithm.
+
+\newpage
+
+\section{Results}
+
+We got the following results for problems using greedy algorithm and SAPLS:
 \begin{center}
-\begin{tabular}{ c|c }
-	Problem & Cost \\
+\begin{tabular}{ c|cc }
+	Problem & greedy alg. & SAPLS \\
 	\hline
-	1 & 159.57 \\
-	2 & 928.64 \\
-	3 & 4316.14 \\
-	4 & 18508.77 \\
-	5 & 8913.48 \\
-	6 & 1277.69 \\
-	7 & ? \\
-	8 & ? \\
-	9 & 154455.98 \\
-	10 & 68551.81 \\
+	1 & 178.70 & 159.57 \\
+	2 & 965.89 & 920.49 \\
+	3 & 4815.14 & 4221.47 \\
+	4 & 21143.48 & 18671.48 \\
+	5 & 10562.16 & 9195.39 \\
+	6 & 1368.44 & 1252.66 \\
+	7 & 42290.67 & 38933.10 \\
+	8 & 44148.05 & 40402.96 \\
+	9 & 161712.63 & 158018.27 \\
+	10 & 80045.22 & 66315.04 \\
 \end{tabular}
 \end{center}
-
 
 \end{document}
