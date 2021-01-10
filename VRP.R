@@ -559,6 +559,13 @@ writeSolution <- function(name, folder, sol.organic, sol.plastic, sol.paper, cos
   close(conn)
 }
 
+
+###############################################################################
+#                                                                             #
+#                             Precalculation                                  #
+#                                                                             #
+###############################################################################
+
 num.file <- 9
 num.percent <- 0.1
 

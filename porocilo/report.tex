@@ -25,7 +25,7 @@ once and all trips start and end in a starting node (depot).
 Capacitated VRP (CVRP) is extension of VRP such that all vehicles have a
 limited carrying capacity.
 
-In our case we have a CVRP, in which we try to optimise route for collecting
+In our case we have a CVRP in which we try to optimise route for collecting
 different types of garbage (organic, plastic, paper) from nodes. Our problem
 also has some additional constraints to basic CVRP:
 \begin{itemize}
@@ -51,7 +51,7 @@ cost of a trip includes:
 \end{itemize}
 Each trip has a starting cost of 10. The distance travelled is priced at 0.1
 per one unit of travelled distance. Hourly cost of an employee stands at 10 per
-hour for first 8 hours and 20 per hour for remaining overtime. Time of each
+hour for first 8 hours and 20 per hour for additional overtime. Time of each
 trip is calculated using speed of truck (50 units per hour) with distance
 travelled and time spend servicing nodes (0.2 hours for picking up garbage and
 0.5 hours for emptying a truck at the end of the route).
@@ -65,10 +65,10 @@ algorithm and the other is simulated annealing with probabilistic local search.
 
 \section{Greedy algorithm}
 
-The idea of our greedy algorithm is to travel to the nearest site with garbage,
+The idea of our greedy algorithm is to travel to the nearest site with garbage
 so that we can pick it up (we have space for it). If no such site can be found,
-we make a trip to starting node and continue. We stop when all garbage is
-collected.
+we make a trip to starting node and repeat the process. We stop when all
+garbage is collected.
 
 \begin{lstlisting}[basicstyle=\small]
 solution is an empty set
@@ -90,16 +90,16 @@ while( exists a location with uncollected garbage ) {
 }
 \end{lstlisting}
 
-When finding a path from one location to other the truck doesn't pick anything
+When finding a path from one location to target the truck doesn't pick anything
 up. This is garanteed by finding closest location from which it can collect. If
 a location on its path happens to be collectable, the previously mentioned
-target location is by definition not the closest, since there is even closer
-location. Therefore there cannot exist a collectible location on
-its path. When there are no closest locations it can collect from the truck can
-return to starting node using any path provided the roads can carry it. On its
-path it will also collect nothing, as there is no location from which it can
-collect. Therefore it can return to starting node without any need for
-additional pickup computation. Then it can begin a new trip.
+target location is by definition not the closest. Therefore there cannot exist
+a collectible location on its path from one node to next. When there are no
+closest locations it can collect from the truck can return to starting node
+using any path provided the roads can carry it. On its path it will also
+collect nothing, as there is no location from which it can collect. Therefore
+it can return to starting node on the shortest possible path without any need
+for additional pickup computation. Then it can begin a new trip.
 
 The above pseudocode is implemented in funciton {\sf greedySolution}. Its
 parameter is a vector of garbage data from locations. It returns a solution in
@@ -137,17 +137,18 @@ a set of all possible swaps between elements of the provided solution. Since
 not all generated solutions are valid, cost function later assigns value of
 infinity to easily distinguish them from valid ones.
 
-Our probabilistic local search (function {\sf AlgorithmLS}) takes a certain
+Probabilistic local search (function {\sf AlgorithmLS}) takes a certain
 fraction (passed as parameter) of the calculated neighborhood, calculates
 the cost for all neighboring solutions and takes the best neighbor. This cost
 is then compared to the best one known so far. If it is better than the current
 best, it does the whole process again, otherwise it returns the known best
 solution.
 
-Our cost function ({\sf costVector} for complete route and {\sf costPerm} for
-routes in permutation notation) for evaluating solutions also uses
+Cost function {\sf costPerm} for evaluating solutions also uses
 precalculated matrices for shortest paths for every node combination with
-respect to carrying capacity of a vehicle.
+respect to carrying capacity of a vehicle. The cost function {\sf costVector}
+does not use them. Since the whole path is provided it just needs to simulate
+it and check for any errors in provided solution.
 
 The key to calculating good solutions relatively fast is in starting soltion.
 If it is bad, neighboring solutions are also bad and it can take some time to
@@ -166,7 +167,7 @@ We got the following results for problems using greedy algorithm and SAPLS:
 	2 & 965.89 & 920.49 \\
 	3 & 4815.14 & 4221.47 \\
 	4 & 21143.48 & 18671.48 \\
-	5 & 10562.16 & 9187.89 \\
+	5 & 10562.16 & 9195.39 \\
 	6 & 1368.44 & 1252.66 \\
 	7 & 42290.67 & 38159.16 \\
 	8 & 44148.05 & 39034.17 \\
