@@ -94,7 +94,7 @@ When finding a path from one location to other the truck doesn't pick anything
 up. This is garanteed by finding closest location from which it can collect. If
 a location on its path happens to be collectable, the previously mentioned
 target location is by definition not the closest, since there is even closer
-location on our path. Therefore there cannot exist a collectible location on
+location. Therefore there cannot exist a collectible location on
 its path. When there are no closest locations it can collect from the truck can
 return to starting node using any path provided the roads can carry it. On its
 path it will also collect nothing, as there is no location from which it can
@@ -132,6 +132,11 @@ Our solutions are represented in permutation form with fixed length. Solution
 is collected in between. This representation simplifies neighborhood
 calculation since we can use simple swaps of elements similarly as in TSP.
 
+The neighborhood is calculated in function {\sf neighborhoodPerm} and generates
+a set of all possible swaps between elements of the provided solution. Since
+not all generated solutions are valid, cost function later assigns value of
+infinity to easily distinguish them from valid ones.
+
 Our probabilistic local search (function {\sf AlgorithmLS}) takes a certain
 fraction (passed as parameter) of the calculated neighborhood, calculates
 the cost for all neighboring solutions and takes the best neighbor. This cost
@@ -161,7 +166,7 @@ We got the following results for problems using greedy algorithm and SAPLS:
 	2 & 965.89 & 920.49 \\
 	3 & 4815.14 & 4221.47 \\
 	4 & 21143.48 & 18671.48 \\
-	5 & 10562.16 & 9195.39 \\
+	5 & 10562.16 & 9187.89 \\
 	6 & 1368.44 & 1252.66 \\
 	7 & 42290.67 & 38159.16 \\
 	8 & 44148.05 & 39034.17 \\
@@ -172,6 +177,9 @@ We got the following results for problems using greedy algorithm and SAPLS:
 
 In all cases solutions of greedy algorithm were inputs of SAPLS, which could
 only further improve them. Greedy algorithm is deterministic, so a solution to
-a particular problem is always the same, while same cannot be said for SALPS.
+a particular problem is always the same, while the same cannot be said for SAPLS.
+Although local search is deterministic, simulated annealing and probabilistic
+local search are not. That way we always get a different solution, although not
+very different as we always have the same starting solution.
 
 \end{document}
