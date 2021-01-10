@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1610309817 "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex" "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.pdf" "report" 1610309848
+["pdflatex"] 1610310172 "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex" "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.pdf" "report" 1610310191
   "C:/Users/dmoho/AppData/Local/MiKTeX/2.9/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1200.pk" 1587911696 14064 bc43efde423d3005c0c42f9298d28df9 ""
   "C:/Users/dmoho/AppData/Local/MiKTeX/2.9/miktex/data/le/pdftex/pdflatex.fmt" 1606561880 10797313 7de5a1c968cd42b0cb2ae8a095c2a6ea ""
   "C:/Users/dmoho/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map" 1606562058 83751 6e4565e2a96ca36e797cc3ed7d4e67f8 ""
@@ -86,15 +86,15 @@
   "C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/tex/latex/refcount/refcount.sty" 1576433952 9878 9e94e8fa600d95f9c7731bb21dfb67a4 ""
   "C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/tex/latex/rerunfilecheck/rerunfilecheck.sty" 1575571282 9715 b051d5b493d9fe5f4bc251462d039e5f ""
   "C:/Users/dmoho/AppData/Local/Programs/MiKTeX 2.9/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
-  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.aux" 1610309819 1279 c32bd8c578a0f21543017476142a750d ""
-  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex" 1610309847 8911 0cce3894802adc503df53c60f0a70866 ""
-  "report.aux" 1610309819 1279 c32bd8c578a0f21543017476142a750d "pdflatex"
-  "report.out" 1610309819 245 6a14535a0410979f9a62977c707a588c "pdflatex"
-  "report.tex" 1610309847 8911 0cce3894802adc503df53c60f0a70866 ""
+  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.aux" 1610310174 1279 c32bd8c578a0f21543017476142a750d ""
+  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.tex" 1610310190 8911 390b87a5ca961f900245e7da334418c4 ""
+  "report.aux" 1610310174 1279 c32bd8c578a0f21543017476142a750d "pdflatex"
+  "report.out" 1610310174 245 6a14535a0410979f9a62977c707a588c "pdflatex"
+  "report.tex" 1610310190 8911 390b87a5ca961f900245e7da334418c4 ""
   (generated)
-  "report.pdf"
   "report.out"
-  "report.aux"
-  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.pdf"
+  "report.pdf"
   "report.log"
   "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.log"
+  "c:/Users/dmoho/Documents/FRI/3_letnik_1_semester/AAHPS/Assignment5/porocilo/report.pdf"
+  "report.aux"
